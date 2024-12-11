@@ -1,0 +1,25 @@
+{
+	"name": "ebay-account-manager",
+	"main": "src/index.ts",
+	"devDependencies": {
+		"@swc/cli": "^0.5.2",
+		"@swc/core": "^1.10.1",
+		"@types/bun": "latest"
+	},
+	"scripts": {
+		"build": "swc src -d dist -D --delete-dir-on-start --strip-leading-paths",
+		"start": "node dist/index.js"
+	},
+	"peerDependencies": {
+		"typescript": "^5.0.0"
+	},
+	"dependencies": {
+		"@decorators/bind": "npm:@jsr/decorators__bind",
+		"@inquirer/prompts": "^7.2.0",
+		"@types/mime-types": "^2.1.4",
+		"discord.js-selfbot-v13": "^3.4.5",
+		"input": "^1.0.1",
+		"mime-types": "^2.1.35",
+		"telegram": "^2.24.6"
+	}
+}
