@@ -1,16 +1,19 @@
 import { channelPredicate, chatPredicate, dmPredicate } from '~/telegram/predicates';
 import type { TelegramClientParams } from 'telegram/client/telegramBaseClient';
+import type { StoreItem, StoreItemAttachment, TelegramListener } from '@types';
 import { NewMessage, type NewMessageEvent } from 'telegram/events';
 import { TelegramClient } from 'telegram/client/TelegramClient';
 import { LogLevel } from 'telegram/extensions/Logger';
+import { stripPhoneNumber } from '~/utilities/strip';
 import { Logger } from 'telegram/extensions/Logger';
 import { createLogger } from '~/structures/logger';
 import { getTelegramListeners } from '~/config';
-import type { TelegramListener } from '@types';
+import { createItemPath } from '~/file-cache';
 import { input } from '@inquirer/prompts';
+import { writeFileSync } from 'node:fs';
+import mimeTypes from 'mime-types';
 import Storage from '~/storage';
 import { Api } from 'telegram';
-import { stripPhoneNumber } from '~/utilities/strip';
 
 
 interface ClientOptions {
@@ -89,21 +92,73 @@ class Client extends TelegramClient {
 		const photo = await this.downloadProfilePhoto(author);
 		const originId = await this.getPeerId(origin);
 
-		for (const { group } of matchedListeners) {
-			Storage.add({
-				type: 'telegram',
-				author: author.username,
-				authorAvatar: photo?.toString('base64'),
-				attachments: [],
-				group,
-				content: event.message.rawText,
-				parameters: {
-					messageId: event.message.id,
-					originId
-				},
-				savedAt: Date.now(),
+		const attachments: StoreItemAttachment[] = [];
+
+		const files = await this.getFiles(event.message);
+		for (const file of files) {
+			const uuid = crypto.randomUUID();
+			const cacheItem = createItemPath(uuid);
+
+			writeFileSync(cacheItem, new Uint8Array(file.buffer));
+
+			attachments.push({
+				name: file.name,
+				type: file.mimeType,
+				identifier: uuid
 			});
 		}
+
+		const item: StoreItem<'telegram'> = {
+			type: 'telegram',
+			author: author.username,
+			authorAvatar: photo?.toString('base64'),
+			attachments,
+			groups: matchedListeners.map(l => l.name),
+			content: event.message.rawText,
+			parameters: {
+				messageId: event.message.id.toString(),
+				originId
+			},
+			savedAt: Date.now(),
+		};
+
+		Storage.add(item);
+	}
+
+	async getFiles(message: Api.Message) {
+		const files: {
+			name: string,
+			buffer: Buffer,
+			mimeType: string;
+		}[] = [];
+
+		const media = message.media;
+		const document = message.document;
+
+		if (media?.className === 'MessageMediaWebPage') {
+			return files;
+		}
+
+		if (document || media) {
+			const payload = (document || media) as any;
+			if (!payload) return files;
+
+			const buf = await message.downloadMedia() as Buffer;
+			if (!buf?.length) return files;
+
+			const id = crypto.randomUUID();
+			const attrib = payload.attributes?.find(a => a.fileName)?.fileName;
+			const ext = payload.mimeType ? payload.mimeType === 'audio/ogg' ? 'ogg' : mimeTypes.extension(payload.mimeType) : 'png';
+			const file = `${id}.${ext}`;
+
+			files.push({
+				name: attrib ?? file,
+				buffer: buf,
+				mimeType: payload.mimeType || 'image/png'
+			});
+		}
+
+		return files;
 	}
 
 	// @ts-ignore

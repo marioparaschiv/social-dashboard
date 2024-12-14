@@ -25,19 +25,35 @@ export interface TelegramListener {
 
 export interface StoreItemAttachment {
 	name: string;
-	url: string;
+	identifier: string;
 	type: string;
 }
 
-export interface StoreItem {
+export interface DiscordParameters {
+	messageId: string,
+	channelId: string,
+	guildId: string;
+}
+
+export interface TelegramParameters {
+	messageId: string,
+	originId: string;
+}
+
+export type StoreItemTypes = 'discord' | 'telegram';
+
+export type StoreItemParameters<T extends string> = T extends 'discord' ? DiscordParameters
+	: T extends 'telegram' ? TelegramParameters : (DiscordParameters & TelegramParameters);
+
+export interface StoreItem<T extends string = never, K = StoreItemParameters<T>> {
 	savedAt: number;
-	type: 'discord' | 'telegram';
-	group: string;
+	type: T;
+	groups: string[];
 	author: string;
 	authorAvatar: string;
 	content: string;
 	attachments: StoreItemAttachment[];
-	parameters: Record<any, any>;
+	parameters: K;
 }
 
 export interface User {

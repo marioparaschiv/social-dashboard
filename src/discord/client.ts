@@ -1,11 +1,12 @@
 import { OPCodes, ConnectionState, HELLO_TIMEOUT, HEARTBEAT_MAX_RESUME_THRESHOLD, MAX_CONNECTION_RETRIES } from '~/discord/constants';
+import type { Message, StoreItem, StoreItemAttachment, User } from '@types';
 import { getDiscordListeners, getDiscordReplacements } from '~/config';
 import { createLogger } from '~/structures/logger';
 import { stripToken } from '~/utilities/strip';
-import type { Message, User } from '@types';
+import { createItemPath } from '~/file-cache';
 import { getMessage } from '~/discord/api';
 import { fetchBuffer } from '~/utilities';
-import mimeTypes from 'mime-types';
+import { writeFileSync } from 'node:fs';
 import config from '@config.json';
 import storage from '~/storage';
 import WebSocket from 'ws';
@@ -160,15 +161,11 @@ class Client {
 						return false;
 					}
 
-					if (listener.chatId && listener.chatId === msg.channel_id && !listener.users?.length) {
-						return true;
+					if (listener.users?.length && !listener.users.includes(msg.author?.id)) {
+						return false;
 					}
 
-					if (listener.users?.length && listener.users.includes(msg.author?.id)) {
-						return true;
-					}
-
-					return false;
+					return true;
 				}) ?? [];
 
 				if (!listeners?.length) return;
@@ -188,26 +185,39 @@ class Client {
 					'https://cdn.discordapp.com/embed/avatars/0.png'
 				).catch(() => null);
 
-				for (const listener of listeners) {
-					storage.add({
-						savedAt: Date.now(),
-						type: 'discord',
-						group: listener.name,
-						author: msg.author.username,
-						authorAvatar,
-						content,
-						attachments: msg.attachments?.map((file: { filename: any; url: any; }) => ({
-							name: file.filename,
-							url: file.url,
-							type: mimeTypes.lookup(file.filename)
-						})) ?? [],
-						parameters: {
-							messageId: msg.id,
-							channelId: channel.id,
-							guildId: guild?.id
-						}
+				const attachments: StoreItemAttachment[] = [];
+				for (const attachment of msg.attachments ?? []) {
+					const uuid = crypto.randomUUID();
+					const cacheItem = createItemPath(uuid);
+
+					const buffer: ArrayBuffer | null = await fetchBuffer(attachment.url).catch(() => null);
+					if (!buffer) continue;
+
+					writeFileSync(cacheItem, new Uint8Array(buffer));
+
+					attachments.push({
+						name: attachment.filename,
+						type: attachment.content_type,
+						identifier: uuid
 					});
 				}
+
+				const item: StoreItem<'discord'> = {
+					savedAt: Date.now(),
+					type: 'discord',
+					groups: listeners.map(l => l.name),
+					author: msg.author.username,
+					authorAvatar,
+					content,
+					attachments,
+					parameters: {
+						messageId: msg.id,
+						channelId: channel.id,
+						guildId: guild?.id
+					}
+				};
+
+				storage.add(item);
 			} break;
 		}
 	}

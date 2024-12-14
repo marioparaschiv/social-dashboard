@@ -4,6 +4,8 @@ import config from '@config.json';
 
 async function init() {
 	for (const { apiHash, apiId, phoneNumber } of config.telegram.accounts) {
+		if (!phoneNumber) continue;
+
 		const client = new Client({ apiHash, apiId, phoneNumber });
 
 		await client.initialize(phoneNumber);

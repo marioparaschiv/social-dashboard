@@ -1,6 +1,6 @@
 import { getLatestBuildNumber } from '~/discord/api';
-import config from '@config.json';
 import Client from '~/discord/client';
+import config from '@config.json';
 
 
 async function init() {
@@ -13,4 +13,4 @@ async function init() {
 	}
 }
 
-init();
+export default { init };
