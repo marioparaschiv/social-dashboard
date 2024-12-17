@@ -1,14 +1,13 @@
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { SidebarLeft } from '@/components/sidebar-left';
+import Header from '~/components/header';
 
 
 function Page(props: React.PropsWithChildren) {
-	return <SidebarProvider>
-		<SidebarLeft />
-		<div className='flex flex-col w-full p-2'>
+	return <>
+		<Header />
+		<div className='flex flex-col w-full h-full p-4 flex-1'>
 			{props.children}
 		</div>
-	</SidebarProvider>;
+	</>;
 }
 
 export default Page;

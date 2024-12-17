@@ -1,6 +1,4 @@
-export * as CreateProduct from './create-product';
-export * as ListedItems from './listed-items';
-export * as Accounts from './accounts';
+export * as Feed from './feed';
 
 export type Page = {
 	path: string,

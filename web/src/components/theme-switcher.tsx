@@ -1,8 +1,8 @@
-import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Button, type ButtonProps } from '@/components/ui/button';
-import useTheme from '@/hooks/use-theme';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '~/components/ui/dropdown-menu';
+import { Button, type ButtonProps } from '~/components/ui/button';
+import useTheme from '~/hooks/use-theme';
 import { Moon, Sun } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '~/utils';
 
 
 function ThemeSwitcher(props: ButtonProps) {

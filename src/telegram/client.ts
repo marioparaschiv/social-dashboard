@@ -4,7 +4,7 @@ import type { StoreItem, StoreItemAttachment, TelegramListener } from '@types';
 import { NewMessage, type NewMessageEvent } from 'telegram/events';
 import { TelegramClient } from 'telegram/client/TelegramClient';
 import { LogLevel } from 'telegram/extensions/Logger';
-import { stripPhoneNumber } from '~/utilities/strip';
+import { stripPhoneNumber } from '~/utils/strip';
 import { Logger } from 'telegram/extensions/Logger';
 import { createLogger } from '~/structures/logger';
 import { getTelegramListeners } from '~/config';
@@ -113,7 +113,7 @@ class Client extends TelegramClient {
 			author: author.username,
 			authorAvatar: photo?.toString('base64'),
 			attachments,
-			groups: matchedListeners.map(l => l.name),
+			groups: [...new Set(matchedListeners.map(l => l.group))],
 			content: event.message.rawText,
 			parameters: {
 				messageId: event.message.id.toString(),

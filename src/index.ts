@@ -1,3 +1,5 @@
+import '~/socket';
+
 import { createLogger } from '~/structures/logger';
 import { initializeCache } from '~/file-cache';
 import Telegram from '~/telegram';
@@ -11,7 +13,7 @@ async function start() {
 	await initializeCache();
 
 	Storage.on('updated', () => {
-		console.log('storage updated', [...Storage.storage.values().map(r => r.attachments)]);
+		console.log('storage updated', [...Storage.storage.values()]);
 	});
 
 	await Promise.allSettled([Telegram.init(), Discord.init()]);

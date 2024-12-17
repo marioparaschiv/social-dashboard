@@ -1,7 +1,7 @@
 import { BUILD_NUMBER_LENGTH, BUILD_NUMBER_STRING } from '~/discord/constants';
 import type { GetMessageOptions, Message } from '@types';
 import { createLogger } from '~/structures/logger';
-import { sleep } from '~/utilities';
+import sleep from '@shared/utils/sleep';
 import config from '@config.json';
 
 

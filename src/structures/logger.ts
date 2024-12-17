@@ -1,5 +1,5 @@
-import { colorize } from '~/utilities';
 import { inspect } from 'node:util';
+import { colorize } from '~/utils';
 import config from '@config.json';
 
 

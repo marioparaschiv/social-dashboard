@@ -1,14 +1,18 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import * as Pages from '@/routes';
+import BackendProvider from '~/providers/backend-provider';
+import * as Pages from '~/routes';
 
 
 const routes = Object.values(Pages).map(({ path, element: Component }: Pages.Page) => ({ path, element: <Component /> }));
 const router = createBrowserRouter(routes);
 
-console.log(routes);
-
 function App() {
-	return <RouterProvider router={router} />;
+	return <BackendProvider>
+		<RouterProvider
+			router={router}
+			future={{ v7_startTransition: true }}
+		/>
+	</BackendProvider>;
 }
 
 export default App;

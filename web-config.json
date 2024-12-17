@@ -1,0 +1,9 @@
+{
+	"ip": "localhost",
+	"port": 29435,
+	"categoryOrder": [
+		"Low Priority",
+		"Medium Priority",
+		"High Priority"
+	]
+}

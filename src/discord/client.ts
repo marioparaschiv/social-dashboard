@@ -2,10 +2,10 @@ import { OPCodes, ConnectionState, HELLO_TIMEOUT, HEARTBEAT_MAX_RESUME_THRESHOLD
 import type { Message, StoreItem, StoreItemAttachment, User } from '@types';
 import { getDiscordListeners, getDiscordReplacements } from '~/config';
 import { createLogger } from '~/structures/logger';
-import { stripToken } from '~/utilities/strip';
+import { stripToken } from '~/utils/strip';
 import { createItemPath } from '~/file-cache';
 import { getMessage } from '~/discord/api';
-import { fetchBuffer } from '~/utilities';
+import { fetchBuffer } from '~/utils';
 import { writeFileSync } from 'node:fs';
 import config from '@config.json';
 import storage from '~/storage';
@@ -156,7 +156,7 @@ class Client {
 
 				if (!msg.content && !msg.embeds?.length && !msg.attachments?.length) return;
 
-				const listeners = getDiscordListeners().filter(listener => {
+				const matchedListeners = getDiscordListeners().filter(listener => {
 					if (listener.chatId && msg.channel_id !== listener.chatId) {
 						return false;
 					}
@@ -168,7 +168,7 @@ class Client {
 					return true;
 				}) ?? [];
 
-				if (!listeners?.length) return;
+				if (!matchedListeners?.length) return;
 
 				const reply = msg.message_reference && (await getMessage({
 					channel: msg.message_reference.channel_id,
@@ -180,10 +180,17 @@ class Client {
 				const guild = this.guilds.get(msg.guild_id);
 				const content = this.getContent(msg);
 
-				const authorAvatar = await fetchBuffer(msg.author.avatar ?
+				const avatarBuffer = await fetchBuffer(msg.author.avatar ?
 					`https://cdn.discordapp.com/avatars/${msg.author.id}/${msg.author.avatar}.${msg.author.avatar.startsWith('a_') ? 'gif' : 'png'}?size=1024` :
 					'https://cdn.discordapp.com/embed/avatars/0.png'
 				).catch(() => null);
+
+				const authorAvatar = avatarBuffer ? crypto.randomUUID() : null;
+
+				if (avatarBuffer) {
+					const cacheItem = createItemPath(authorAvatar);
+					writeFileSync(cacheItem, new Uint8Array(avatarBuffer));
+				}
 
 				const attachments: StoreItemAttachment[] = [];
 				for (const attachment of msg.attachments ?? []) {
@@ -205,7 +212,7 @@ class Client {
 				const item: StoreItem<'discord'> = {
 					savedAt: Date.now(),
 					type: 'discord',
-					groups: listeners.map(l => l.name),
+					groups: [...new Set(matchedListeners.map(l => l.group))],
 					author: msg.author.username,
 					authorAvatar,
 					content,

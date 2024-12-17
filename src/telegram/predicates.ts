@@ -3,16 +3,21 @@ import type { TelegramListener } from '@types';
 import type { Api } from 'telegram';
 
 
-export function chatPredicate(listener: TelegramListener, event: NewMessageEvent, author: Api.User, chat: Api.Chat) {
-	if (listener.chatId && chat.id.toString() !== listener.chatId) return false;
+export function globalPredicate(listener: TelegramListener, chatId: string, author: Api.User) {
+	if (listener.chatId && chatId !== listener.chatId) return false;
 	if (listener.users && !(author.usernames ?? []).some(u => listener.users.includes(u.username))) return false;
 
 	return true;
 }
 
+export function chatPredicate(listener: TelegramListener, event: NewMessageEvent, author: Api.User, chat: Api.Chat) {
+	if (!globalPredicate(listener, chat.id.toString(), author)) return false;
+
+	return true;
+}
+
 export function channelPredicate(listener: TelegramListener, event: NewMessageEvent, author: Api.User, channel: Api.Channel, reference: Api.Message) {
-	if (listener.chatId && channel.id.toString() !== listener.chatId) return false;
-	if (listener.users && !(author.usernames ?? []).some(u => listener.users.includes(u.username))) return false;
+	if (!globalPredicate(listener, channel.id.toString(), author)) return false;
 
 	// Forums
 	if (listener.subchannels !== undefined) {
@@ -28,8 +33,7 @@ export function channelPredicate(listener: TelegramListener, event: NewMessageEv
 }
 
 export async function dmPredicate(listener: TelegramListener, event: NewMessageEvent, author: Api.User, user: Api.PeerUser) {
-	if (listener.chatId && user.userId.toString() !== listener.chatId) return false;
-	if (listener.users && !(author.usernames ?? []).some(u => listener.users.includes(u.username))) return false;
+	if (!globalPredicate(listener, user.userId.toString(), author)) return false;
 
 	return true;
 }
