@@ -1,12 +1,14 @@
 import { createContext, useCallback, useEffect, useRef, useState } from 'react';
-import { DispatchType } from '@shared/constants';
-import { sleep } from '@shared/utils';
 import { Dispatch, type StoreItem, type StoreItemTypes } from '@types';
+import { DispatchType } from '@shared/constants';
 import config from '@web-config.json';
+import { sleep } from '@shared/utils';
 
+
+type SocketStates = 'idle' | 'connecting' | 'connected' | 'ready';
 
 interface BackendContextProps {
-	loading: boolean;
+	state: SocketStates;
 	authenticated: boolean;
 	data: StoreItem<StoreItemTypes>[];
 	send: (type: DispatchType, payload?: Record<PropertyKey, any>) => void;
@@ -20,7 +22,7 @@ interface BackendContextProps {
 export const BackendContext = createContext<BackendContextProps>({
 	send: () => void 0,
 	data: [],
-	loading: true,
+	state: 'idle',
 	authenticated: false,
 	on: () => void 0,
 	once: () => void 0,
@@ -34,7 +36,7 @@ export const listeners = new Map<DispatchType, Set<(payload: Record<PropertyKey,
 function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 	const [{ data }, setData] = useState<{ data: StoreItem<StoreItemTypes>[]; }>({ data: [] });
 	const [authenticated, setAuthenticated] = useState<boolean>(false);
-	const [loading, setLoading] = useState<boolean>(true);
+	const [state, setState] = useState<SocketStates>('idle');
 	const ws = useRef<WebSocket | null>(null);
 
 	const emit = useCallback((type: DispatchType, payload: any) => {
@@ -106,13 +108,13 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 
 	useEffect(() => {
 		const password = localStorage.getItem('password');
-		if (!password || loading || authenticated) return;
+		if (!password || state !== 'ready' || authenticated) return;
 
-		send(DispatchType.AUTH_REQUEST, { password });
-	}, [loading, authenticated]);
+		send(DispatchType.REQUEST_AUTH, { password });
+	}, [state, authenticated]);
 
 	const ctx = {
-		loading,
+		state,
 		authenticated,
 		data,
 		send,
@@ -135,7 +137,7 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 		function createSocket() {
 			if (ws.current) return;
 
-			setLoading(true);
+			setState('connecting');
 			setAuthenticated(false);
 
 			const socket = new WebSocket('ws://' + config.ip + ':' + config.port);
@@ -146,6 +148,7 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 
 			socket.addEventListener('close', async () => {
 				ws.current = null;
+				setState('idle');
 
 				console.log('Socket closed, waiting 1000ms then retrying...');
 				await sleep(1000);
@@ -155,6 +158,7 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 
 			socket.addEventListener('open', () => {
 				console.info('Socket opened');
+				setState('connected');
 			});
 
 			socket.addEventListener('message', (event) => {
@@ -168,7 +172,7 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 					switch (payload.type) {
 						case DispatchType.WELCOME: {
 							console.log('WebSocket ready for authentication.');
-							setLoading(false);
+							setState('ready');
 						} break;
 
 						case DispatchType.AUTH_RESPONSE: {
@@ -181,7 +185,6 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 						case DispatchType.DATA_UPDATE: {
 							const { data } = payload;
 							setData({ data });
-							console.log(data);
 						} break;
 
 						default: {

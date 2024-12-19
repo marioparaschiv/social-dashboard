@@ -1,11 +1,12 @@
-import useBackend from '~/hooks/use-backend';
-import Page from '~/components/page';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '~/components/ui/resizable';
-import { useMemo } from 'react';
-import { splitBy } from '~/utils';
+import { CheckCircle2, LoaderCircle, MessageCircleOff, Moon } from 'lucide-react';
 import { Separator } from '~/components/ui/separator';
-import config from '@web-config.json';
+import useBackend from '~/hooks/use-backend';
 import Message from '~/components/message';
+import config from '@web-config.json';
+import Page from '~/components/page';
+import { splitBy } from '~/utils';
+import { useMemo } from 'react';
 
 
 export const path = '/';
@@ -23,23 +24,36 @@ function Feed() {
 			.sort((a, b) => config.categoryOrder.indexOf(a) - config.categoryOrder.indexOf(b));
 	}, [data]);
 
-	return <Page>
-		{backend.loading && 'Loading...'}
-		{!backend.authenticated && 'Please auth.'}
-		{backend.authenticated && !backend.loading && <ResizablePanelGroup
-			direction="horizontal"
-			className="flex h-full w-full rounded-lg border flex-1"
+	return <Page className='max-h-dvh overflow-hidden'>
+		{(backend.state !== 'ready' || !backend.authenticated) && <div className='font-bold flex-1 w-full h-full flex items-center justify-center text-center'>
+			{backend.state !== 'ready' && <div className='flex items-center gap-2'>
+				{backend.state === 'idle' && <Moon size={16} />}
+				{backend.state === 'connecting' && <LoaderCircle className='animate-spin' size={16} />}
+				{backend.state === 'connected' && <CheckCircle2 size={16} />}
+				<span className='capitalize'>Initializing... ({backend.state})</span>
+			</div>}
+			{backend.state === 'ready' && !backend.authenticated && 'Please auth.'}
+		</div>}
+		{backend.authenticated && backend.state === 'ready' && <ResizablePanelGroup
+			direction='horizontal'
+			className='flex h-full w-full rounded-lg border flex-1'
 		>
 			{groups.length !== 0 ? groups.map((group, index) => data[group]?.length !== 0 && <>
-				<ResizablePanel defaultSize={50}>
+				<ResizablePanel key={'panel-' + index} defaultSize={50}>
 					<h1 className='font-bold p-3'>{group}</h1>
 					<Separator />
-					<div className="flex flex-col gap-2 h-full p-3">
-						{data[group].map(message => <Message message={message} />)}
+					<div className='flex flex-col gap-4 h-full p-3 overflow-auto'>
+						{data[group]?.map((message, index) => <Message
+							key={group + '-message-' + index}
+							message={message}
+						/>)}
 					</div>
 				</ResizablePanel>
-				{index !== groups.length - 1 && <ResizableHandle withHandle={true} />}
-			</>) : <span className='p-2 font-bold w-full text-center'>No messages have been processed yet.</span>}
+				{index !== groups.length - 1 && <ResizableHandle key={'handle-' + index} withHandle={true} />}
+			</>) : <p className='p-2 font-bold w-full h-full flex items-center gap-2 justify-center m-auto'>
+				<MessageCircleOff size={16} />
+				No messages have been processed yet.
+			</p>}
 		</ResizablePanelGroup>}
 	</Page>;
 };

@@ -1,6 +1,6 @@
 import * as NavigationMenuPrimitive from '@radix-ui/react-navigation-menu';
-import { ChevronDown } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { ChevronDown } from 'lucide-react';
 import { cn } from '~/utils';
 import React from 'react';
 
@@ -47,17 +47,15 @@ NavigationMenu.displayName = NavigationMenuPrimitive.Root.displayName;
 const NavigationMenuLink = React.forwardRef<NavigationMenuLinkRef, NavigationMenuLinkProps>(({ className, children, ...props }, ref) => {
 	const location = useLocation();
 
-	console.log(props.href, location);
-
 	return <NavigationMenuPrimitive.NavigationMenuLink
+		{...props}
 		asChild
 		ref={ref}
 		data-selected={props.href === location.pathname}
 		className={cn(
-			'group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-foreground/10 hover:text-accent-foreground focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[selected=true]:bg-foreground/15 data-[active]:bg-foreground/50 data-[state=open]:bg-foreground/50',
+			'group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-foreground/10 hover:text-accent-foreground focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[selected=true]:bg-foreground/15 data-[selected=true]:font-bold data-[active]:bg-foreground/50 data-[state=open]:bg-foreground/50',
 			className
 		)}
-		{...props}
 	>
 		<Link to={props.href!}>
 			{children}

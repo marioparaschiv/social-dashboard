@@ -1,13 +1,18 @@
+import React from 'react';
 import Header from '~/components/header';
+import { cn } from '~/utils';
 
+interface PageProps extends React.ComponentProps<'div'> {
+	containerClassName?: string;
+}
 
-function Page(props: React.PropsWithChildren) {
-	return <>
+function Page({ children, ...props }: PageProps) {
+	return <div {...props}>
 		<Header />
-		<div className='flex flex-col w-full h-full p-4 flex-1'>
-			{props.children}
+		<div className={cn('flex flex-col w-full h-full p-4 flex-1', props.containerClassName)}>
+			{children}
 		</div>
-	</>;
+	</div>;
 }
 
 export default Page;

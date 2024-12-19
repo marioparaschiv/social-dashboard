@@ -1,18 +1,19 @@
 import { channelPredicate, chatPredicate, dmPredicate } from '~/telegram/predicates';
 import type { TelegramClientParams } from 'telegram/client/telegramBaseClient';
 import type { StoreItem, StoreItemAttachment, TelegramListener } from '@types';
+import { getTelegramEntityDetails } from '~/utils/get-entity-details';
 import { NewMessage, type NewMessageEvent } from 'telegram/events';
 import { TelegramClient } from 'telegram/client/TelegramClient';
 import { LogLevel } from 'telegram/extensions/Logger';
-import { stripPhoneNumber } from '~/utils/strip';
 import { Logger } from 'telegram/extensions/Logger';
 import { createLogger } from '~/structures/logger';
+import { stripPhoneNumber } from '~/utils/strip';
 import { getTelegramListeners } from '~/config';
-import { createItemPath } from '~/file-cache';
 import { input } from '@inquirer/prompts';
-import { writeFileSync } from 'node:fs';
+import { cacheItem } from '~/file-cache';
 import mimeTypes from 'mime-types';
 import Storage from '~/storage';
+import { hash } from '~/utils';
 import { Api } from 'telegram';
 
 
@@ -60,6 +61,7 @@ class Client extends TelegramClient {
 		await event.getInputChat();
 
 		const origin = await event.getChat() as Api.Chat | Api.Channel | Api.PeerUser;
+		const reply = await event.message.getReplyMessage();
 		if (!origin) return;
 
 		const author = await event.message.getSender();
@@ -70,8 +72,6 @@ class Client extends TelegramClient {
 
 		switch (origin.className) {
 			case 'Channel': {
-				const reply = await event.message.getReplyMessage();
-
 				const filtered = listeners.filter((listener) => channelPredicate(listener, event, author, origin, reply));
 				if (filtered.length) matchedListeners.push(...filtered);
 			} break;
@@ -89,30 +89,37 @@ class Client extends TelegramClient {
 
 		if (!matchedListeners.length) return;
 
-		const photo = await this.downloadProfilePhoto(author);
+		const originPhoto = await this.downloadProfilePhoto(origin) as Buffer | null;
+		const originAvatar = originPhoto?.length ? hash(originPhoto.buffer as ArrayBuffer) : 'none';
+		if (originAvatar) cacheItem(originAvatar, originPhoto.buffer as ArrayBuffer);
+
+		const authorPhoto = await this.downloadProfilePhoto(author) as Buffer | null;
+		const authorAvatar = authorPhoto?.length ? hash(authorPhoto.buffer as ArrayBuffer) : 'none';
+		if (authorAvatar) cacheItem(authorAvatar, authorPhoto.buffer as ArrayBuffer);
+
 		const originId = await this.getPeerId(origin);
 
 		const attachments: StoreItemAttachment[] = [];
 
 		const files = await this.getFiles(event.message);
 		for (const file of files) {
-			const uuid = crypto.randomUUID();
-			const cacheItem = createItemPath(uuid);
-
-			writeFileSync(cacheItem, new Uint8Array(file.buffer));
+			cacheItem(file.hash, file.buffer);
 
 			attachments.push({
 				name: file.name,
 				type: file.mimeType,
-				identifier: uuid
+				identifier: file.hash
 			});
 		}
 
 		const item: StoreItem<'telegram'> = {
 			type: 'telegram',
 			author: author.username,
-			authorAvatar: photo?.toString('base64'),
+			authorAvatar,
+			origin: await getTelegramEntityDetails(origin, reply),
+			originAvatar,
 			attachments,
+			listeners: [...new Set(matchedListeners.map(l => l.name))],
 			groups: [...new Set(matchedListeners.map(l => l.group))],
 			content: event.message.rawText,
 			parameters: {
@@ -128,8 +135,9 @@ class Client extends TelegramClient {
 	async getFiles(message: Api.Message) {
 		const files: {
 			name: string,
-			buffer: Buffer,
+			buffer: ArrayBuffer,
 			mimeType: string;
+			hash: string;
 		}[] = [];
 
 		const media = message.media;
@@ -146,14 +154,15 @@ class Client extends TelegramClient {
 			const buf = await message.downloadMedia() as Buffer;
 			if (!buf?.length) return files;
 
-			const id = crypto.randomUUID();
+			const id = hash(buf.buffer as ArrayBuffer);
 			const attrib = payload.attributes?.find(a => a.fileName)?.fileName;
 			const ext = payload.mimeType ? payload.mimeType === 'audio/ogg' ? 'ogg' : mimeTypes.extension(payload.mimeType) : 'png';
 			const file = `${id}.${ext}`;
 
 			files.push({
 				name: attrib ?? file,
-				buffer: buf,
+				hash: id,
+				buffer: buf.buffer as ArrayBuffer,
 				mimeType: payload.mimeType || 'image/png'
 			});
 		}

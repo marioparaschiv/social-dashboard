@@ -1,8 +1,8 @@
 import { createLogger } from '~/structures/logger';
 import { DispatchType } from '@shared/constants';
 import { WebSocket, WebSocketServer } from 'ws';
-import * as Events from '~/events';
 import config from '@web-config.json';
+import * as Events from '~/events';
 import storage from '~/storage';
 
 

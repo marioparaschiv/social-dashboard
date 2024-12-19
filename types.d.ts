@@ -1,9 +1,29 @@
+import type { getDiscordEntityDetails, getTelegramEntityDetails } from '~/utils/get-entity-details';
 import type { DispatchType } from '@shared/constants';
+
 
 declare module 'ws' {
 	interface WebSocket {
 		authenticated: boolean;
 	}
+}
+
+
+export interface AuthRequest {
+	password: string;
+}
+
+export interface AuthResponse {
+	failed: boolean;
+}
+
+export interface RequestImage {
+	hash: string;
+}
+
+export interface ImageResponse {
+	hash: string;
+	data: string;
 }
 
 export interface Dispatch {
@@ -63,6 +83,9 @@ export interface StoreItem<T extends string = never, K = StoreItemParameters<T>>
 	type: T;
 	groups: string[];
 	author: string;
+	listeners: string[];
+	origin: T extends 'telegram' ? Awaited<ReturnType<typeof getTelegramEntityDetails>> : T extends 'discord' ? Awaited<ReturnType<typeof getDiscordEntityDetails>> : never;
+	originAvatar: string;
 	authorAvatar: string;
 	content: string;
 	attachments: StoreItemAttachment[];
@@ -158,6 +181,7 @@ export interface Message {
 	type: number,
 	content: string,
 	channel_id: string,
+	guild_id?: string,
 	author: {
 		id: string,
 		username: string,
@@ -172,6 +196,10 @@ export interface Message {
 		avatar_decoration_data: string | null,
 		banner_color: string | null;
 	},
+	message_reference: {
+		message_id: string;
+		channel_id: string;
+	} | null,
 	attachments: any[],
 	embeds: any[],
 	mentions: any[],

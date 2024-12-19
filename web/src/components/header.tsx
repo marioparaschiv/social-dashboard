@@ -2,16 +2,13 @@ import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuL
 import ThemeSwitcher from '~/components/theme-switcher';
 import { Cog, MessageSquareText } from 'lucide-react';
 
-interface HeaderProps extends React.ComponentProps<'header'> {
 
-}
-
-function Header(props: HeaderProps) {
-	return <header className='flex items-center w-full p-3 border-b'>
+function Header() {
+	return <header className='flex items-center w-full p-4 border-b'>
 		<NavigationMenu>
 			<NavigationMenuList>
 				<NavigationMenuItem className='flex gap-2'>
-					<NavigationMenuLink href='/' className='flex items-center gap-2'>
+					<NavigationMenuLink href='/' className='group-data-[selected=true]:bg-red-500 flex items-center gap-2'>
 						<MessageSquareText size={18} />
 						Feed
 					</NavigationMenuLink>
@@ -22,7 +19,6 @@ function Header(props: HeaderProps) {
 				</NavigationMenuItem>
 			</NavigationMenuList>
 		</NavigationMenu>
-
 		<ThemeSwitcher className='ml-auto' />
 	</header>;
 }

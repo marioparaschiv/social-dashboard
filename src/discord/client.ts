@@ -1,21 +1,21 @@
 import { OPCodes, ConnectionState, HELLO_TIMEOUT, HEARTBEAT_MAX_RESUME_THRESHOLD, MAX_CONNECTION_RETRIES } from '~/discord/constants';
-import type { Message, StoreItem, StoreItemAttachment, User } from '@types';
+import type { Guild, Message, StoreItem, StoreItemAttachment, User } from '@types';
 import { getDiscordListeners, getDiscordReplacements } from '~/config';
+import { getDiscordEntityDetails } from '~/utils/get-entity-details';
 import { createLogger } from '~/structures/logger';
 import { stripToken } from '~/utils/strip';
-import { createItemPath } from '~/file-cache';
-import { getMessage } from '~/discord/api';
+import { cacheItem } from '~/file-cache';
 import { fetchBuffer } from '~/utils';
-import { writeFileSync } from 'node:fs';
 import config from '@config.json';
 import storage from '~/storage';
+import { hash } from '~/utils';
 import WebSocket from 'ws';
 
 
 class Client {
 	logger = createLogger('Discord', 'Boot');
 	channels: Map<string, any> = new Map();
-	guilds: Map<string, any> = new Map();
+	guilds: Map<string, Guild> = new Map();
 	ws: WebSocket | null = null;
 
 	user: User | null = null;
@@ -150,9 +150,23 @@ class Client {
 				this.attempts = 0;
 			} break;
 
+			case 'CHANNEL_UPDATE': {
+				const channel = payload.d;
+				if (!channel?.id) return;
+
+				this.channels.set(channel.id, channel);
+			} break;
+
+			case 'GUILD_UPDATE': {
+				const guild = payload.d;
+				if (!guild?.id) return;
+
+				this.guilds.set(guild.id, guild);
+			} break;
+
 			case 'MESSAGE_CREATE':
 			case 'MESSAGE_UPDATE': {
-				const msg = payload.d;
+				const msg = payload.d as Message;
 
 				if (!msg.content && !msg.embeds?.length && !msg.attachments?.length) return;
 
@@ -170,37 +184,42 @@ class Client {
 
 				if (!matchedListeners?.length) return;
 
-				const reply = msg.message_reference && (await getMessage({
-					channel: msg.message_reference.channel_id,
-					message: msg.message_reference.message_id,
-					token: this.token
-				}));
+				// const reply = msg.message_reference && (await getMessage({
+				// 	channel: msg.message_reference.channel_id,
+				// 	message: msg.message_reference.message_id,
+				// 	token: this.token
+				// }));
 
 				const channel = this.channels.get(msg.channel_id);
 				const guild = this.guilds.get(msg.guild_id);
 				const content = this.getContent(msg);
 
-				const avatarBuffer = await fetchBuffer(msg.author.avatar ?
+				const avatarBuffer: ArrayBuffer | null = await fetchBuffer(msg.author.avatar ?
 					`https://cdn.discordapp.com/avatars/${msg.author.id}/${msg.author.avatar}.${msg.author.avatar.startsWith('a_') ? 'gif' : 'png'}?size=1024` :
 					'https://cdn.discordapp.com/embed/avatars/0.png'
 				).catch(() => null);
 
-				const authorAvatar = avatarBuffer ? crypto.randomUUID() : null;
+				const authorAvatar = avatarBuffer ? hash(avatarBuffer) : null;
+				if (authorAvatar) cacheItem(authorAvatar, avatarBuffer);
 
-				if (avatarBuffer) {
-					const cacheItem = createItemPath(authorAvatar);
-					writeFileSync(cacheItem, new Uint8Array(avatarBuffer));
-				}
+				const originAvatarHash = msg.guild_id ? guild?.icon : channel.icon;
+
+				console.log(originAvatarHash);
+				const originAvatarBuffer = originAvatarHash ? await fetchBuffer(
+					`https://cdn.discordapp.com/${channel.icon ? 'channel-icons' : 'icons'}/${channel.icon ? msg.channel_id : msg.guild_id}/${originAvatarHash}.${originAvatarHash.startsWith('a_') ? 'gif' : 'png'}?size=240`
+				).catch(() => null) : null;
+
+				const originAvatar = originAvatarHash ? hash(originAvatarBuffer) : authorAvatar;
+				if (originAvatar) cacheItem(originAvatar, originAvatarBuffer);
 
 				const attachments: StoreItemAttachment[] = [];
 				for (const attachment of msg.attachments ?? []) {
-					const uuid = crypto.randomUUID();
-					const cacheItem = createItemPath(uuid);
-
 					const buffer: ArrayBuffer | null = await fetchBuffer(attachment.url).catch(() => null);
 					if (!buffer) continue;
 
-					writeFileSync(cacheItem, new Uint8Array(buffer));
+					const uuid = hash(buffer);
+
+					cacheItem(uuid, buffer);
 
 					attachments.push({
 						name: attachment.filename,
@@ -212,8 +231,11 @@ class Client {
 				const item: StoreItem<'discord'> = {
 					savedAt: Date.now(),
 					type: 'discord',
+					listeners: [...new Set(matchedListeners.map(l => l.name))],
 					groups: [...new Set(matchedListeners.map(l => l.group))],
 					author: msg.author.username,
+					origin: await getDiscordEntityDetails(msg, guild, channel),
+					originAvatar,
 					authorAvatar,
 					content,
 					attachments,

@@ -1,4 +1,5 @@
-import { DispatchType, type AuthRequest, type AuthResponse } from '@shared/constants';
+import type { AuthRequest, AuthResponse } from '@types';
+import { DispatchType } from '@shared/constants';
 import type { WebSocket } from 'ws';
 import config from '@config.json';
 import { send } from '~/socket';
