@@ -1,7 +1,7 @@
-import type { StoreItem, StoreItemTypes } from '@types';
+import type { StoreItem } from '@types';
 import Store from '~/structures/store';
 
 
-const storage = new Store<StoreItem<StoreItemTypes>>();
+const storage = new Store<StoreItem>();
 
 export default storage;

@@ -1,37 +1,50 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip';
-import type { StoreItem, StoreItemTypes } from '@types';
+import MessageAttachment from '~/components/message-attachment';
 import BackendImage from '~/components/backend-image';
 import Timestamp from '~/components/timestamp';
+import type { StoreItem, User } from '@types';
+import config from '@web-config.json';
+import { useMemo } from 'react';
+import { cn } from '~/utils';
 
 
 interface MessageProps extends React.ComponentProps<'li'> {
-	message: StoreItem<StoreItemTypes>;
+	message: StoreItem;
 }
 
+
 function Message({ message, ...props }: MessageProps) {
+	const highlightedUsers = config[message.type]?.highlightedUsers;
+	const authorColor = highlightedUsers?.[message.author as keyof typeof highlightedUsers] ?? 'inherit';
+
+	const imageAttachments = useMemo(() => message.attachments.filter(a => a.type.startsWith('image/')), [message]);
+	const otherAttachments = useMemo(() => message.attachments.filter(a => !a.type.startsWith('image/')), [message]);
+
 	return <li className='flex gap-2 items-center' {...props}>
-		<div>
+		<div className='flex-shrink-0 m-2 self-start'>
 			<BackendImage
 				className='w-11 h-11 rounded-full'
 				hash={message.authorAvatar}
+				name='avatar.png'
 			/>
 		</div>
-		<div className='flex-col gap-2'>
+		<div className='flex flex-col'>
 			<div className='flex gap-2 items-center'>
-				<h1 className='font-bold text-base'>
+				<h1 className='font-bold text-base' style={{ color: authorColor }}>
 					{message.author}
 				</h1>
 				<Timestamp className='text-xs text-foreground/60' timestamp={message.savedAt} />
 				<TooltipProvider>
 					<Tooltip>
-						<TooltipTrigger className='flex gap-1 items-center'>
+						<TooltipTrigger className='flex gap-1 items-center flex-shrink-0'>
 							{message.originAvatar === 'none' ? <div className='w-6 h-6 rounded-full bg-foreground/20 flex items-center justify-center'>
-								{message.type === 'telegram' ?
-									formatTelegramOrigin(message.origin).at(0).toUpperCase() :
-									formatDiscordOrigin(message.origin).at(0).toUpperCase()}
+								{(message.type === 'telegram' ?
+									formatTelegramOrigin(message.origin).at(0)?.toUpperCase() :
+									formatDiscordOrigin(message.origin).at(0)?.toUpperCase()) ?? '?'}
 							</div> : <BackendImage
 								className='w-6 h-6 rounded-full'
 								hash={message.originAvatar}
+								name='avatar.png'
 							/>}
 							<span className='text-xs text-foreground/60'><b>{message.listeners.join(', ')}</b></span>
 						</TooltipTrigger>
@@ -43,12 +56,26 @@ function Message({ message, ...props }: MessageProps) {
 					</Tooltip>
 				</TooltipProvider>
 			</div>
-			<p className='text-sm'>{message.content}</p>
+			<p>{message.content}</p>
+			{/* Images */}
+			{imageAttachments.length !== 0 && <div className={cn('mt-1 w-full grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2 items-stretch', message.content && 'mt-2')}>
+				{imageAttachments.map((attachment, index) => <MessageAttachment
+					attachment={attachment}
+					key={`message-${message.savedAt}-attachment-${index}`}
+				/>)}
+			</div>}
+			{otherAttachments.length !== 0 && <div className={cn('mt-1 flex gap-2', imageAttachments.length && 'mt-2')}>
+				{/* Attachments */}
+				{message.attachments.filter(r => !r.type.startsWith('image/')).map((attachment, index) => <MessageAttachment
+					attachment={attachment}
+					key={`message-${message.savedAt}-attachment-${index}`}
+				/>)}
+			</div>}
 		</div>
 	</li>;
 }
 
-function formatTelegramOrigin(entityDetails: StoreItem<'telegram'>['origin']) {
+function formatTelegramOrigin(entityDetails: StoreItem<'telegram'>['origin']): string {
 	if (!entityDetails) return '';
 
 	// Handle forum cases
@@ -80,7 +107,7 @@ function formatDiscordOrigin(details: StoreItem<'discord'>['origin']) {
 			}
 
 			// Otherwise join recipient usernames
-			return details.recipients ? details.recipients.map(r => r.username)?.join(', ') + ' (Group)' : 'Unknown Group';
+			return details.recipients ? details.recipients.map((r: User) => r.username)?.join(', ') + ' (Group)' : 'Unknown Group';
 		}
 
 		case 'dm': {

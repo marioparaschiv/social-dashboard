@@ -99,7 +99,6 @@ export async function getDiscordEntityDetails(message: Message, guild: Guild, ch
 
 			// Group DM
 			if (channel.type === 3) {
-				console.log(channel);
 				return {
 					type: 'group',
 					id: channel.id,

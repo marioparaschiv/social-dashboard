@@ -6,7 +6,6 @@ import { join } from 'node:path';
 
 export let saved = [];
 
-
 export async function initializeCache() {
 	// Remove previous cache if it exists. We do not want to persist cache due to disk size limitations.
 	await wipeCache();

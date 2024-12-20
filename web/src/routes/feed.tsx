@@ -1,8 +1,7 @@
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '~/components/ui/resizable';
 import { CheckCircle2, LoaderCircle, MessageCircleOff, Moon } from 'lucide-react';
-import { Separator } from '~/components/ui/separator';
+import { ResizableHandle, ResizablePanelGroup } from '~/components/ui/resizable';
 import useBackend from '~/hooks/use-backend';
-import Message from '~/components/message';
+import Panel from '~/components/panel';
 import config from '@web-config.json';
 import Page from '~/components/page';
 import { splitBy } from '~/utils';
@@ -24,7 +23,7 @@ function Feed() {
 			.sort((a, b) => config.categoryOrder.indexOf(a) - config.categoryOrder.indexOf(b));
 	}, [data]);
 
-	return <Page className='max-h-dvh overflow-hidden'>
+	return <Page className='h-dvh max-h-dvh overflow-hidden flex flex-col'>
 		{(backend.state !== 'ready' || !backend.authenticated) && <div className='font-bold flex-1 w-full h-full flex items-center justify-center text-center'>
 			{backend.state !== 'ready' && <div className='flex items-center gap-2'>
 				{backend.state === 'idle' && <Moon size={16} />}
@@ -35,20 +34,15 @@ function Feed() {
 			{backend.state === 'ready' && !backend.authenticated && 'Please auth.'}
 		</div>}
 		{backend.authenticated && backend.state === 'ready' && <ResizablePanelGroup
+			className='flex w-full rounded-md border'
 			direction='horizontal'
-			className='flex h-full w-full rounded-lg border flex-1'
 		>
 			{groups.length !== 0 ? groups.map((group, index) => data[group]?.length !== 0 && <>
-				<ResizablePanel key={'panel-' + index} defaultSize={50}>
-					<h1 className='font-bold p-3'>{group}</h1>
-					<Separator />
-					<div className='flex flex-col gap-4 h-full p-3 overflow-auto'>
-						{data[group]?.map((message, index) => <Message
-							key={group + '-message-' + index}
-							message={message}
-						/>)}
-					</div>
-				</ResizablePanel>
+				<Panel
+					data={data[group as keyof typeof data]}
+					group={group}
+					index={index}
+				/>
 				{index !== groups.length - 1 && <ResizableHandle key={'handle-' + index} withHandle={true} />}
 			</>) : <p className='p-2 font-bold w-full h-full flex items-center gap-2 justify-center m-auto'>
 				<MessageCircleOff size={16} />

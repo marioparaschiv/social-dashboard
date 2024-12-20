@@ -1,6 +1,14 @@
 {
 	"ip": "localhost",
 	"port": 29435,
+	"telegram": {
+		"highlightedUsers": {
+			"ripeternal": "rgba(255, 0, 255)"
+		}
+	},
+	"discord": {
+		"highlightedUsers": {}
+	},
 	"categoryOrder": [
 		"Low Priority",
 		"Medium Priority",

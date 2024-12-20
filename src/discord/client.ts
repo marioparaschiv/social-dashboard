@@ -175,6 +175,10 @@ class Client {
 						return false;
 					}
 
+					if (!listener.allowBots && msg.author.bot) {
+						return false;
+					}
+
 					if (listener.users?.length && !listener.users.includes(msg.author?.id)) {
 						return false;
 					}
@@ -204,7 +208,6 @@ class Client {
 
 				const originAvatarHash = msg.guild_id ? guild?.icon : channel.icon;
 
-				console.log(originAvatarHash);
 				const originAvatarBuffer = originAvatarHash ? await fetchBuffer(
 					`https://cdn.discordapp.com/${channel.icon ? 'channel-icons' : 'icons'}/${channel.icon ? msg.channel_id : msg.guild_id}/${originAvatarHash}.${originAvatarHash.startsWith('a_') ? 'gif' : 'png'}?size=240`
 				).catch(() => null) : null;

@@ -44,6 +44,7 @@ export interface DiscordListener {
 	name: string;
 	group: string;
 	chatId?: string;
+	allowBots?: boolean;
 	users?: string;
 }
 
@@ -78,7 +79,7 @@ export type StoreItemTypes = 'discord' | 'telegram';
 export type StoreItemParameters<T extends string> = T extends 'discord' ? DiscordParameters
 	: T extends 'telegram' ? TelegramParameters : (DiscordParameters & TelegramParameters);
 
-export interface StoreItem<T extends string = never, K = StoreItemParameters<T>> {
+export interface StoreItem<T extends string = StoreItemTypes, K = StoreItemParameters<T>> {
 	savedAt: number;
 	type: T;
 	groups: string[];
@@ -116,6 +117,7 @@ export interface User {
 	avatar_decoration_data: string | null,
 	avatar: string | null,
 	accent_color: string | null;
+	bot: boolean;
 }
 
 export interface Guild {
@@ -182,20 +184,7 @@ export interface Message {
 	content: string,
 	channel_id: string,
 	guild_id?: string,
-	author: {
-		id: string,
-		username: string,
-		avatar: string,
-		discriminator: string,
-		public_flags: number,
-		premium_type: number,
-		flags: number,
-		banner: string | null,
-		accent_color: string | null,
-		global_name: string | null,
-		avatar_decoration_data: string | null,
-		banner_color: string | null;
-	},
+	author: User,
 	message_reference: {
 		message_id: string;
 		channel_id: string;

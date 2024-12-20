@@ -1,5 +1,5 @@
 import { createContext, useCallback, useEffect, useRef, useState } from 'react';
-import { Dispatch, type StoreItem, type StoreItemTypes } from '@types';
+import { Dispatch, type StoreItem } from '@types';
 import { DispatchType } from '@shared/constants';
 import config from '@web-config.json';
 import { sleep } from '@shared/utils';
@@ -10,10 +10,10 @@ type SocketStates = 'idle' | 'connecting' | 'connected' | 'ready';
 interface BackendContextProps {
 	state: SocketStates;
 	authenticated: boolean;
-	data: StoreItem<StoreItemTypes>[];
+	data: StoreItem[];
 	send: (type: DispatchType, payload?: Record<PropertyKey, any>) => void;
-	on: (type: DispatchType, callback: (...args: any[]) => any) => void;
-	once: (type: DispatchType, callback: (...args: any[]) => any) => void;
+	on: (type: DispatchType, callback: (...args: any[]) => any) => () => void;
+	once: (type: DispatchType, callback: (...args: any[]) => any) => () => void;
 	off: (type: DispatchType, callback: (...args: any[]) => any) => void;
 	waitForDispatch: (type: DispatchType) => Promise<unknown>;
 	readonly ws: WebSocket | null;
@@ -34,7 +34,7 @@ export const BackendContext = createContext<BackendContextProps>({
 export const listeners = new Map<DispatchType, Set<(payload: Record<PropertyKey, any>) => any>>();
 
 function BackendProvider({ children, ...props }: React.PropsWithChildren) {
-	const [{ data }, setData] = useState<{ data: StoreItem<StoreItemTypes>[]; }>({ data: [] });
+	const [{ data }, setData] = useState<{ data: StoreItem[]; }>({ data: [] });
 	const [authenticated, setAuthenticated] = useState<boolean>(false);
 	const [state, setState] = useState<SocketStates>('idle');
 	const ws = useRef<WebSocket | null>(null);
@@ -60,6 +60,8 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 			set.add(callback);
 			listeners.set(type, set);
 		}
+
+		return () => off(type, callback);
 	}, []);
 
 	const once = useCallback((type: DispatchType, callback: (...args: any[]) => any) => {
@@ -74,6 +76,8 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 		}
 
 		on(type, onCallback);
+
+		return () => off(type, callback);
 	}, []);
 
 	const off = useCallback((type: DispatchType, callback: (...args: any[]) => any) => {
