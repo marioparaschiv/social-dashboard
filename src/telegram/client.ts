@@ -63,11 +63,12 @@ class Client extends TelegramClient {
 	async onMessage(event: NewMessageEvent) {
 		await event.getInputChat();
 
-		const origin = await event.getChat() as Api.Chat | Api.Channel | Api.PeerUser;
+		const origin = await event.getChat() as Api.Chat | Api.Channel | Api.PeerUser | Api.User;
 		const reply = await event.message.getReplyMessage();
 		if (!origin) return;
 
 		const author = await event.message.getSender();
+		console.log(origin.className);
 		if (!author || author.className !== 'User') return;
 
 		const listeners = getTelegramListeners();
@@ -84,7 +85,8 @@ class Client extends TelegramClient {
 				if (filtered.length) matchedListeners.push(...filtered);
 			} break;
 
-			case 'PeerUser': {
+			case 'PeerUser':
+			case 'User': {
 				const filtered = listeners.filter((listener) => dmPredicate(listener, event, author, origin));
 				if (filtered.length) matchedListeners.push(...filtered);
 			} break;

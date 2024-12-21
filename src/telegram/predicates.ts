@@ -32,8 +32,8 @@ export function channelPredicate(listener: TelegramListener, event: NewMessageEv
 	return true;
 }
 
-export async function dmPredicate(listener: TelegramListener, event: NewMessageEvent, author: Api.User, user: Api.PeerUser) {
-	if (!globalPredicate(listener, user.userId.toString(), author)) return false;
+export async function dmPredicate(listener: TelegramListener, event: NewMessageEvent, author: Api.User, user: Api.User | Api.PeerUser) {
+	if (!globalPredicate(listener, ((user as Api.User).id ?? (user as Api.PeerUser).userId).toString(), author)) return false;
 
 	return true;
 }

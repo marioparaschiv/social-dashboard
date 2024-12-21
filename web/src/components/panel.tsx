@@ -37,11 +37,14 @@ function Panel(props: PanelOptions) {
 	>
 		<h1 className='font-bold p-3'>{group}</h1>
 		<Separator />
-		<div ref={ref} className='flex flex-col gap-3 p-3 overflow-auto'>
-			{data.map((message, index) => <Message
-				key={group + '-message-' + index}
-				message={message}
-			/>)}
+		<div ref={ref} className='flex flex-col gap-1.5 p-3 overflow-auto'>
+			{data.map((message, index) => <>
+				<Message
+					key={group + '-message-' + index}
+					message={message}
+				/>
+				{index !== (data.length - 1) && <Separator className='!bg-foreground/5' />}
+			</>)}
 		</div>
 	</ResizablePanel>;
 }
