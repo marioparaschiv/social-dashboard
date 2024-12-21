@@ -23,12 +23,6 @@
 		@apply border-border;
 	}
 
-	#root {
-		max-height: 100dvh;
-		display: flex;
-		flex-direction: column;
-	}
-
   :root {
     --radius: 0.5rem;
 

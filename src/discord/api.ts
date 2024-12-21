@@ -1,5 +1,5 @@
 import { BUILD_NUMBER_LENGTH, BUILD_NUMBER_STRING } from '~/discord/constants';
-import type { GetMessageOptions, Message } from '@types';
+import type { GetMessageOptions, Message, SendMessageOptions } from '@types';
 import { createLogger } from '~/structures/logger';
 import sleep from '@shared/utils/sleep';
 import config from '@config.json';
@@ -7,18 +7,40 @@ import config from '@config.json';
 
 const logger = createLogger('Discord', 'API');
 
+export async function sendMessage(options: SendMessageOptions) {
+	options.retriesRemaining ??= 3;
+
+	if (options.retriesRemaining === 0) return false;
+
+	const res = await fetch(`https://discord.com/api/v${config.discord.apiVersion}/channels/${options.channel}/messages`, {
+		method: 'POST',
+		referrer: `https://discord.com/channels/${options.guild ?? '@me'}/${options.channel}`,
+		body: JSON.stringify(options.message),
+		headers: {
+			'Content-Type': 'application/json',
+			...createHeaders(options.token)
+		}
+	});
+
+	const json = await res.json();
+
+	if (!res.ok) {
+		options.retriesRemaining--;
+		logger.warn(`Got unexpected response while sending message: ${json} (Status: ${res.status}, Retries Remaining: ${options.retriesRemaining})`);
+		await sleep((json?.retry_after ?? 1) * 1000);
+		return sendMessage(options);
+	}
+
+	return true;
+}
+
 export async function getMessage(options: GetMessageOptions): Promise<Message | null> {
 	options.retriesRemaining ??= 3;
 
-	const { channel, message, retriesRemaining } = options;
+	if (options.retriesRemaining === 0) return null;
 
-	if (retriesRemaining === 0) return null;
-
-	const res = await fetch(`https://discord.com/api/v10/channels/${channel}/messages?around=${message}&limit=1`, {
-		headers: {
-			'Authorization': options.token,
-			'X-Super-Properties': btoa(JSON.stringify(config.discord.superProperties))
-		}
+	const res = await fetch(`https://discord.com/api/v${config.discord.apiVersion}/channels/${options.channel}/messages?around=${options.message}&limit=1`, {
+		headers: createHeaders(options.token)
 	});
 
 	const json = await res.json();
@@ -26,7 +48,7 @@ export async function getMessage(options: GetMessageOptions): Promise<Message | 
 	if (res.status !== 200) {
 		await sleep((json?.retry_after ?? 1) * 1000);
 		options.retriesRemaining--;
-		logger.warn(`Got unexpected response while fetching message ${message} in channel ${channel}: ${json} (Status: ${res.status}, Retries Remaining: ${retriesRemaining})`);
+		logger.warn(`Got unexpected response while fetching message ${options.message} in channel ${options.channel}: ${json} (Status: ${res.status}, Retries Remaining: ${options.retriesRemaining})`);
 		return await getMessage(options);
 	}
 
@@ -35,6 +57,17 @@ export async function getMessage(options: GetMessageOptions): Promise<Message | 
 	}
 
 	return json?.[0] as Message;
+}
+
+export function createHeaders(token: string) {
+	return {
+		'User-Agent': config.discord.superProperties.browser_user_agent,
+		'Authorization': token,
+		'X-Super-Properties': btoa(JSON.stringify(config.discord.superProperties)),
+		'X-Discord-Locale': config.discord.localeHeader,
+		'X-Discord-Timezone': config.discord.timezoneHeader,
+		'X-Debug-Options': 'bugReporterEnabled'
+	};
 }
 
 export async function getLatestBuildNumber() {

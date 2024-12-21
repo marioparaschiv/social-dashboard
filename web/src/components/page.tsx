@@ -7,10 +7,10 @@ interface PageProps extends React.ComponentProps<'div'> {
 	containerClassName?: string;
 }
 
-function Page({ children, ...props }: PageProps) {
-	return <div {...props}>
+function Page({ children, className, containerClassName, ...props }: PageProps) {
+	return <div {...props} className={cn('', className)}>
 		<Header />
-		<div className={cn('flex flex-col w-full h-full p-4 flex-1', props.containerClassName)}>
+		<div className={cn('flex flex-col p-4 w-full', containerClassName)}>
 			{children}
 		</div>
 	</div>;

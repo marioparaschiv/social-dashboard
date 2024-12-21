@@ -33,7 +33,8 @@ class Client {
 	sequence: number = 0;
 
 	constructor(
-		public token: string
+		public token: string,
+		public accountIndex: number
 	) { }
 
 	onMessage(data: string) {
@@ -245,7 +246,8 @@ class Client {
 					parameters: {
 						messageId: msg.id,
 						channelId: channel.id,
-						guildId: guild?.id
+						guildId: guild?.id,
+						accountIndex: this.accountIndex
 					}
 				};
 

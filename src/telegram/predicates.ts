@@ -21,7 +21,7 @@ export function channelPredicate(listener: TelegramListener, event: NewMessageEv
 
 	// Forums
 	if (listener.subchannels !== undefined) {
-		const topic = reference?.action.className == 'MessageActionTopicCreate' ? reference.action.title : null;
+		const topic = reference?.action?.className == 'MessageActionTopicCreate' ? reference.action.title : null;
 		const includeMainChannel = listener.includeMainSubchannel && !reference;
 		const topicMatches = topic && listener.subchannels.includes(topic);
 

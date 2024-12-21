@@ -6,17 +6,11 @@ import { send } from '~/socket';
 
 
 function handler(ws: WebSocket, payload: AuthRequest) {
-	if (config.password !== payload.password) {
-		return send(ws, DispatchType.AUTH_RESPONSE, {
-			failed: true
-		} as AuthResponse);
-	}
+	const success = config.password === payload.password;
 
-	send(ws, DispatchType.AUTH_RESPONSE, {
-		failed: false
-	} as AuthResponse);
+	if (success) ws.authenticated = true;
 
-	ws.authenticated = true;
+	return send(ws, DispatchType.AUTH_RESPONSE, { success } as AuthResponse);
 }
 
 export default handler;

@@ -13,8 +13,15 @@ export interface AuthRequest {
 	password: string;
 }
 
+export interface RequestReply<T = StoreItemTypes> {
+	messageType: T;
+	content: string;
+	uuid: string;
+	parameters: T extends 'telegram' ? TelegramParameters : T extends 'discord' ? DiscordParameters : never;
+}
+
 export interface AuthResponse {
-	failed: boolean;
+	success: boolean;
 }
 
 export interface RequestImage {
@@ -29,6 +36,14 @@ export interface ImageResponse {
 export interface Dispatch {
 	type: DispatchType;
 	[key: PropertyKey]: any;
+}
+
+export interface SendMessageOptions {
+	guild: string | null;
+	channel: string;
+	message: Partial<Message>;
+	token: string;
+	retriesRemaining?: number;
 }
 
 export interface GetMessageOptions {
@@ -64,14 +79,16 @@ export interface StoreItemAttachment {
 }
 
 export interface DiscordParameters {
-	messageId: string,
-	channelId: string,
+	messageId: string;
+	channelId: string;
 	guildId: string;
+	accountIndex: number;
 }
 
 export interface TelegramParameters {
-	messageId: string,
+	messageId: string;
 	originId: string;
+	accountIndex: number;
 }
 
 export type StoreItemTypes = 'discord' | 'telegram';

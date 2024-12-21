@@ -180,7 +180,7 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 						} break;
 
 						case DispatchType.AUTH_RESPONSE: {
-							if (payload.failed) return;
+							if (!payload.success) return;
 
 							setAuthenticated(true);
 							send(DispatchType.REQUEST_DATA);

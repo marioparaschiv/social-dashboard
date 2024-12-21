@@ -46,7 +46,7 @@ export async function getTelegramEntityDetails(peer: any, reference?: Api.Messag
 
 		// For channels (supergroups and channels)
 		if (entity instanceof Api.Channel) {
-			const forumName = reference?.action.className == 'MessageActionTopicCreate' ? reference.action.title : null;
+			const forumName = reference?.action?.className == 'MessageActionTopicCreate' ? reference.action.title : null;
 
 			return {
 				title: entity.title,

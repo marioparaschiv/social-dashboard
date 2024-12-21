@@ -31,13 +31,13 @@ function Panel(props: PanelOptions) {
 	}, [ref.current, data.length, isFirstRender]);
 
 	return <ResizablePanel
-		className='flex flex-col h-full overflow-hidden'
+		className='flex flex-col'
 		key={'panel-' + index}
 		defaultSize={50}
 	>
 		<h1 className='font-bold p-3'>{group}</h1>
 		<Separator />
-		<div ref={ref} className='flex flex-col gap-3 p-3 overflow-auto flex-1'>
+		<div ref={ref} className='flex flex-col gap-3 p-3 overflow-auto'>
 			{data.map((message, index) => <Message
 				key={group + '-message-' + index}
 				message={message}

@@ -1,10 +1,16 @@
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip';
 import MessageAttachment from '~/components/message-attachment';
+import type { RequestReply, StoreItem, User } from '@types';
 import BackendImage from '~/components/backend-image';
+import { LoaderCircle, Reply } from 'lucide-react';
+import { DispatchType } from '@shared/constants';
+import { Button } from '~/components/ui/button';
 import Timestamp from '~/components/timestamp';
-import type { StoreItem, User } from '@types';
+import { Input } from '~/components/ui/input';
+import useBackend from '~/hooks/use-backend';
+import { useMemo, useState } from 'react';
 import config from '@web-config.json';
-import { useMemo } from 'react';
 import { cn } from '~/utils';
 
 
@@ -14,13 +20,85 @@ interface MessageProps extends React.ComponentProps<'li'> {
 
 
 function Message({ message, ...props }: MessageProps) {
+	const [replyLoading, setReplyLoading] = useState(false);
+	const [replyFailed, setReplyFailed] = useState(false);
+	const [replyContent, setReplyContent] = useState('');
+	const [replyOpen, setReplyOpen] = useState(false);
+	const backend = useBackend();
+
 	const highlightedUsers = config[message.type]?.highlightedUsers;
 	const authorColor = highlightedUsers?.[message.author as keyof typeof highlightedUsers] ?? 'inherit';
 
 	const imageAttachments = useMemo(() => message.attachments.filter(a => a.type.startsWith('image/')), [message]);
 	const otherAttachments = useMemo(() => message.attachments.filter(a => !a.type.startsWith('image/')), [message]);
 
-	return <li className='flex gap-2 items-center' {...props}>
+	return <li className='relative flex gap-2 items-center group hover:bg-foreground/10 rounded-md' {...props}>
+		<div className='group-hover:flex absolute hidden border right-1 top-1 rounded-lg'>
+			<Dialog
+				open={replyOpen}
+				onOpenChange={(open) => {
+					setReplyOpen(open);
+
+					if (!open) {
+						setReplyLoading(false);
+						setReplyFailed(false);
+					}
+				}}
+			>
+				<DialogTrigger asChild>
+					<button className='flex gap-1 items-center text-xs bg-background/40 hover:bg-background/60 rounded-md p-1'>
+						<Reply size={18} /> Reply
+					</button>
+				</DialogTrigger>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Replying to {message.author}</DialogTitle>
+					</DialogHeader>
+					<Input
+						placeholder='Hey! How are you?'
+						value={replyContent}
+						onChange={(e) => setReplyContent(e.target.value ?? '')}
+					/>
+					{replyFailed && <span className='text-red-500 mx-1'>Failed to reply to message. Does it still exist?</span>}
+					<DialogFooter className='w-full'>
+						<Button
+							className='w-full disabled:opacity-50'
+							size='sm'
+							disabled={replyLoading || !replyContent}
+							onClick={async () => {
+								setReplyLoading(true);
+								setReplyFailed(false);
+
+								const uuid = crypto.randomUUID();
+
+								backend.send(DispatchType.REQUEST_REPLY, {
+									messageType: message.type,
+									content: replyContent,
+									parameters: message.parameters,
+									uuid
+								} as RequestReply);
+
+								const success = await new Promise<boolean>((resolve) => {
+									const remove = backend.on(DispatchType.REPLY_RESPONSE, (payload) => {
+										if (payload.uuid !== uuid) return;
+
+										remove();
+										resolve(payload.success);
+									});
+								});
+
+								setReplyFailed(!success);
+								setReplyLoading(false);
+
+								if (success) setReplyOpen(false);
+							}}
+						>
+							{replyLoading ? <LoaderCircle className='animate-spin' /> : 'Send'}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+		</div>
 		<div className='flex-shrink-0 m-2 self-start'>
 			<BackendImage
 				className='w-11 h-11 rounded-full'
@@ -34,7 +112,7 @@ function Message({ message, ...props }: MessageProps) {
 					{message.author}
 				</h1>
 				<Timestamp className='text-xs text-foreground/60' timestamp={message.savedAt} />
-				<TooltipProvider>
+				<TooltipProvider delayDuration={100}>
 					<Tooltip>
 						<TooltipTrigger className='flex gap-1 items-center flex-shrink-0'>
 							{message.originAvatar === 'none' ? <div className='w-6 h-6 rounded-full bg-foreground/20 flex items-center justify-center'>

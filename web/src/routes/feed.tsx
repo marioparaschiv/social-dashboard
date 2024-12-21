@@ -23,7 +23,7 @@ function Feed() {
 			.sort((a, b) => config.categoryOrder.indexOf(a) - config.categoryOrder.indexOf(b));
 	}, [data]);
 
-	return <Page className='h-dvh max-h-dvh overflow-hidden flex flex-col'>
+	return <Page className='flex flex-col max-h-dvh h-full'>
 		{(backend.state !== 'ready' || !backend.authenticated) && <div className='font-bold flex-1 w-full h-full flex items-center justify-center text-center'>
 			{backend.state !== 'ready' && <div className='flex items-center gap-2'>
 				{backend.state === 'idle' && <Moon size={16} />}
@@ -34,7 +34,7 @@ function Feed() {
 			{backend.state === 'ready' && !backend.authenticated && 'Please auth.'}
 		</div>}
 		{backend.authenticated && backend.state === 'ready' && <ResizablePanelGroup
-			className='flex w-full rounded-md border'
+			className='flex w-full h-full rounded-md border'
 			direction='horizontal'
 		>
 			{groups.length !== 0 ? groups.map((group, index) => data[group]?.length !== 0 && <>

@@ -26,8 +26,9 @@ interface ClientOptions {
 
 class Client extends TelegramClient {
 	private _logger!: ReturnType<typeof createLogger>;
+	public accountIndex: number;
 
-	constructor(options: ClientOptions) {
+	constructor(options: ClientOptions, accountIndex: number) {
 		// Use a pre-constructor trick to set _logger before super()
 		const proto = new.target.prototype;
 
@@ -40,6 +41,8 @@ class Client extends TelegramClient {
 		const cache = `.credentials[${options.phoneNumber.replace(/[^a-zA-Z0-9]/g, '_')}]`;
 
 		super(cache, options.apiId, options.apiHash, options.params ?? { connectionRetries: Infinity });
+
+		this.accountIndex = accountIndex;
 
 		this.onMessage = this.onMessage.bind(this);
 	}
@@ -123,8 +126,9 @@ class Client extends TelegramClient {
 			groups: [...new Set(matchedListeners.map(l => l.group))],
 			content: event.message.rawText,
 			parameters: {
+				accountIndex: this.accountIndex,
 				messageId: event.message.id.toString(),
-				originId
+				originId,
 			},
 			savedAt: Date.now(),
 		};
