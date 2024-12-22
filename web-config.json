@@ -2,12 +2,16 @@
 	"ip": "localhost",
 	"port": 29435,
 	"telegram": {
-		"highlightedUsers": {
+		"userColours": {
 			"ripeternal": "rgba(255, 0, 255)"
 		}
 	},
 	"discord": {
-		"highlightedUsers": {}
+		"userColours": {}
+	},
+	"highlightedKeywords": {
+		"pink": "rgba(255, 0, 255)",
+		"hey|hello": "rgba(255, 0, 0)"
 	},
 	"categoryOrder": [
 		"Low Priority",

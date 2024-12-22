@@ -9,6 +9,7 @@ import { Button } from '~/components/ui/button';
 import Timestamp from '~/components/timestamp';
 import { Input } from '~/components/ui/input';
 import useBackend from '~/hooks/use-backend';
+import Markdown from '~/components/markdown';
 import { useMemo, useState } from 'react';
 import config from '@web-config.json';
 import { cn } from '~/utils';
@@ -26,13 +27,18 @@ function Message({ message, ...props }: MessageProps) {
 	const [replyOpen, setReplyOpen] = useState(false);
 	const backend = useBackend();
 
-	const highlightedUsers = config[message.type]?.highlightedUsers;
-	const authorColor = highlightedUsers?.[message.author as keyof typeof highlightedUsers] ?? 'inherit';
+	const userColours = config[message.type]?.userColours;
+	const highlightedKeywords = config.highlightedKeywords;
+	const authorColor = userColours?.[message.author as keyof typeof userColours] ?? 'inherit';
 
 	const imageAttachments = useMemo(() => message.attachments.filter(a => a.type.startsWith('image/')), [message]);
 	const otherAttachments = useMemo(() => message.attachments.filter(a => !a.type.startsWith('image/')), [message]);
 
-	return <li className='relative flex gap-2 items-center group hover:bg-foreground/10 rounded-md' {...props}>
+	return <li
+		data-is-replying={replyOpen}
+		className='relative flex gap-2 items-center group hover:bg-foreground/10 rounded-md data-[is-replying=true]:bg-amber-600/20'
+		{...props}
+	>
 		<div className='group-hover:flex absolute hidden border right-1 top-1 rounded-lg'>
 			<Dialog
 				open={replyOpen}
@@ -134,7 +140,9 @@ function Message({ message, ...props }: MessageProps) {
 					</Tooltip>
 				</TooltipProvider>
 			</div>
-			<p>{message.content}</p>
+			<p className='prose [&>*]:text-inherit text-white'>
+				<Markdown>{message.content}</Markdown>
+			</p>
 			{/* Images */}
 			{imageAttachments.length !== 0 && <div className={cn('mt-1 w-full grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2 items-stretch', message.content && 'mt-2')}>
 				{imageAttachments.map((attachment, index) => <MessageAttachment

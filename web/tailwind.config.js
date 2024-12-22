@@ -1,3 +1,4 @@
+import typography from '@tailwindcss/typography';
 import animate from 'tailwindcss-animate';
 
 
@@ -20,6 +21,6 @@ export default {
 			}
 		}
 	},
-	plugins: [animate],
+	plugins: [animate, typography],
 }
 

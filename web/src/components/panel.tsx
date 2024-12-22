@@ -43,7 +43,7 @@ function Panel(props: PanelOptions) {
 					key={group + '-message-' + index}
 					message={message}
 				/>
-				{index !== (data.length - 1) && <Separator className='!bg-foreground/5' />}
+				{index !== (data.length - 1) && <Separator className='!bg-foreground/10' />}
 			</>)}
 		</div>
 	</ResizablePanel>;

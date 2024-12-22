@@ -206,7 +206,7 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 
 		return () => {
 			document.removeEventListener('beforeunload', onUnload);
-			ws.current!.close();
+			ws.current?.close();
 		};
 	}, []);
 
