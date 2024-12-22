@@ -24,8 +24,8 @@ export const BackendContext = createContext<BackendContextProps>({
 	data: [],
 	state: 'idle',
 	authenticated: false,
-	on: () => void 0,
-	once: () => void 0,
+	on: () => () => void 0,
+	once: () => () => void 0,
 	off: () => void 0,
 	waitForDispatch: () => Promise.resolve(),
 	ws: null
@@ -131,7 +131,6 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 			return ws.current;
 		}
 	};
-
 
 	useEffect(() => {
 		function onUnload() {

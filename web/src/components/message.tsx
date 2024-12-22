@@ -28,7 +28,6 @@ function Message({ message, ...props }: MessageProps) {
 	const backend = useBackend();
 
 	const userColours = config[message.type]?.userColours;
-	const highlightedKeywords = config.highlightedKeywords;
 	const authorColor = userColours?.[message.author as keyof typeof userColours] ?? 'inherit';
 
 	const imageAttachments = useMemo(() => message.attachments.filter(a => a.type.startsWith('image/')), [message]);
@@ -63,9 +62,14 @@ function Message({ message, ...props }: MessageProps) {
 					<Input
 						placeholder='Hey! How are you?'
 						value={replyContent}
-						onChange={(e) => setReplyContent(e.target.value ?? '')}
+						data-failed={replyFailed}
+						className='data-[failed=true]:!border-red-500 data-[failed=true]:border-2'
+						onChange={(e) => {
+							setReplyFailed(false);
+							setReplyContent(e.target.value ?? '');
+						}}
 					/>
-					{replyFailed && <span className='text-red-500 mx-1'>Failed to reply to message. Does it still exist?</span>}
+					{replyFailed && <span className='text-red-500'>Failed to reply to message. Does it still exist?</span>}
 					<DialogFooter className='w-full'>
 						<Button
 							className='w-full disabled:opacity-50'
@@ -140,7 +144,7 @@ function Message({ message, ...props }: MessageProps) {
 					</Tooltip>
 				</TooltipProvider>
 			</div>
-			<p className='prose [&>*]:text-inherit text-white'>
+			<p className='prose [&>*]:text-inherit text-foreground'>
 				<Markdown>{message.content}</Markdown>
 			</p>
 			{/* Images */}
