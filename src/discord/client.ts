@@ -171,12 +171,19 @@ class Client {
 
 				if (!msg.content && !msg.embeds?.length && !msg.attachments?.length) return;
 
+				const channel = this.channels.get(msg.channel_id);
+				const guild = this.guilds.get(msg.guild_id);
+
 				const matchedListeners = getDiscordListeners().filter(listener => {
 					if (listener.chatId && msg.channel_id !== listener.chatId) {
 						return false;
 					}
 
 					if (!listener.allowBots && msg.author.bot) {
+						return false;
+					}
+
+					if (!(listener.allowDMs ?? true) && [1, 3].includes(channel.type)) {
 						return false;
 					}
 
@@ -195,8 +202,6 @@ class Client {
 				// 	token: this.token
 				// }));
 
-				const channel = this.channels.get(msg.channel_id);
-				const guild = this.guilds.get(msg.guild_id);
 				const content = this.getContent(msg);
 
 				const avatarBuffer: ArrayBuffer | null = await fetchBuffer(msg.author.avatar ?

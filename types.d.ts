@@ -60,6 +60,7 @@ export interface DiscordListener {
 	group: string;
 	chatId?: string;
 	allowBots?: boolean;
+	allowDMs?: boolean;
 	users?: string;
 }
 
@@ -68,6 +69,7 @@ export interface TelegramListener {
 	group: string;
 	chatId?: string;
 	users?: string[];
+	allowDMs?: boolean;
 	includeMainSubchannel?: boolean;
 	subchannels?: string[];
 }
