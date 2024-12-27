@@ -174,6 +174,7 @@ class Client {
 				const channel = this.channels.get(msg.channel_id);
 				const guild = this.guilds.get(msg.guild_id);
 
+				console.log(msg);
 				const matchedListeners = getDiscordListeners().filter(listener => {
 					if (listener.chatId && msg.channel_id !== listener.chatId) {
 						return false;
@@ -187,7 +188,7 @@ class Client {
 						return false;
 					}
 
-					if (listener.users?.length && !listener.users.includes(msg.author?.id)) {
+					if (listener.users?.length && !listener.users.includes(msg.author?.username)) {
 						return false;
 					}
 
