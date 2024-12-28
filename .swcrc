@@ -22,12 +22,12 @@
 				"useBuiltins": true
 			}
 		},
-		"baseUrl": ".",
+		"baseUrl": "src",
 		"paths": {
-			"~/*": [
-				"src/*"
-			],
 			"@*": [
+				"../*"
+			],
+			"~/*": [
 				"*"
 			]
 		}
