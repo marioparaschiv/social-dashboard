@@ -1,5 +1,5 @@
 {
-	"name": "ebay-account-manager",
+	"name": "social-dashboard",
 	"main": "src/index.ts",
 	"devDependencies": {
 		"@swc/cli": "^0.5.2",
