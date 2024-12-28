@@ -1,33 +1,29 @@
 function splitBy<
-	T extends Array<Record<K, any>>,
-	K extends keyof T[number]
->(items: T, key: K, sorter?: Parameters<T['sort']>['0']): Record<PropertyKey, T> {
-	const out: Record<string, T[]> = { unknown: [] };
+	T extends Record<string, any>,
+	K extends keyof T,
+>(items: T[], key: K, sorter?: (a: T, b: T) => number): Record<PropertyKey, T[]> {
+	const out: Record<PropertyKey, T[]> = { unknown: [] };
 
-	if (sorter !== void 0) {
-		items = items.sort(sorter);
+	if (sorter !== undefined) {
+		items = [...items].sort(sorter);
 	}
 
-	for (let i = 0; i < items.length; i++) {
-		const item = items[i] as T;  // Type of `item` is `T[number]`, or `Record<K, any>`
+	for (const item of items) {
 		const value = item[key];
 
-		// If the key is undefined or null, push the item to the 'unknown' category
-		if (value == void 0) {
+		if (value === undefined || value === null) {
 			out['unknown'].push(item);
 			continue;
 		}
 
-		if (typeof value === 'object' && Array.isArray(value)) {
-			for (const key of value) {
-				// Ensure there's an object for the key value in `out`
-				out[key] ??= [];
-				out[key].push(item);
+		if (Array.isArray(value)) {
+			for (const subValue of value as any[]) {
+				out[subValue as PropertyKey] ??= [];
+				out[subValue as PropertyKey].push(item);
 			}
-		} else if (typeof value === 'string') {
-			// Ensure there's an object for the key value in `out`
-			out[value] ??= [];
-			out[value].push(item);
+		} else {
+			out[value as PropertyKey] ??= [];
+			out[value as PropertyKey].push(item);
 		}
 	}
 

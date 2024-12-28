@@ -4,7 +4,7 @@ import { DispatchType } from '@shared/constants';
 import { useCallback, useState } from 'react';
 import { cn, downloadDataURL } from '~/utils';
 import useBackend from '~/hooks/use-backend';
-import { FileIcon } from 'lucide-react';
+import { FileIcon, X } from 'lucide-react';
 
 
 interface MessageAttachmentProps extends React.ComponentProps<'div'> {
@@ -34,7 +34,18 @@ function MessageAttachment({ attachment, className, ...props }: MessageAttachmen
 		});
 	}, []);
 
+	if (error) {
+
+	}
+
 	if (attachment.type.startsWith('image/')) {
+		if (error) {
+			return <div className='flex flex-col bg-foreground/10 px-6 py-4 text-center m-auto items-center justify-center rounded-md'>
+				<X />
+				Failed to load.
+			</div>;
+		}
+
 		return <BackendImage
 			className='rounded-md'
 			role='button'
@@ -46,12 +57,12 @@ function MessageAttachment({ attachment, className, ...props }: MessageAttachmen
 
 	return <div
 		{...props}
-		className={cn('flex select-none items-center gap-2 bg-foreground/30 hover:bg-foreground/50 w-fit transition-colors rounded-full px-3 py-1.5 cursor-pointer', className)}
-		onClick={download}
+		className={cn('flex select-none items-center gap-2 bg-foreground/30 hover:bg-foreground/50 w-fit transition-colors rounded-full px-3 py-1.5', isLoading && 'animate-pulse', !error && 'cursor-pointer', className)}
+		onClick={error ? () => null : download}
 	>
-		<FileIcon className='w-4 h-4' />
+		{error ? <X className='w-4 h-4' /> : <FileIcon className='w-4 h-4' />}
 		<span className='text-sm truncate max-w-[200px]'>
-			{attachment.name}
+			{isLoading ? 'Loading...' : attachment.name}
 		</span>
 	</div>;
 }

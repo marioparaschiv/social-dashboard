@@ -110,11 +110,15 @@ function Message({ message, ...props }: MessageProps) {
 			</Dialog>
 		</div>
 		<div className='flex-shrink-0 m-2 self-start'>
-			<BackendImage
+			{message.authorAvatar === 'none' ? <div className='w-11 h-11 rounded-full bg-foreground/20 flex items-center justify-center'>
+				{(message.type === 'telegram' ?
+					formatTelegramOrigin(message.origin).at(0)?.toUpperCase() :
+					formatDiscordOrigin(message.origin).at(0)?.toUpperCase()) ?? '?'}
+			</div> : <BackendImage
 				className='w-11 h-11 rounded-full'
 				hash={message.authorAvatar}
 				name='avatar.png'
-			/>
+			/>}
 		</div>
 		<div className='flex flex-col'>
 			<div className='flex gap-2 items-center'>

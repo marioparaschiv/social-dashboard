@@ -68,10 +68,12 @@ class Client extends TelegramClient {
 		if (!origin) return;
 
 		const author = await event.message.getSender();
-		if (!author || author.className !== 'User') return;
+		if (!author || (author.className !== 'Channel' && author.className !== 'User')) return;
 
 		const listeners = getTelegramListeners();
 		const matchedListeners: TelegramListener[] = [];
+
+		console.log(origin.className);
 
 		switch (origin.className) {
 			case 'Channel': {
@@ -118,7 +120,7 @@ class Client extends TelegramClient {
 
 		const item: StoreItem<'telegram'> = {
 			type: 'telegram',
-			author: author.username,
+			author: author.username ?? (author as Api.Channel).title ?? 'Unknown',
 			authorAvatar,
 			origin: await getTelegramEntityDetails(origin, reply),
 			originAvatar,
