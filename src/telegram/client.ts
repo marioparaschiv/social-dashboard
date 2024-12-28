@@ -68,7 +68,6 @@ class Client extends TelegramClient {
 		if (!origin) return;
 
 		const author = await event.message.getSender();
-		console.log(origin.className);
 		if (!author || author.className !== 'User') return;
 
 		const listeners = getTelegramListeners();
@@ -189,28 +188,28 @@ class Client extends TelegramClient {
 				return logger.logLevel ? logger.levels.indexOf(logger.logLevel) >= logger.levels.indexOf(level) : false;
 			},
 
-			warn: (message: string): void => {
+			warn: (...messages: string[]): void => {
 				if (!logger.canSend(LogLevel.WARN)) return;
 
-				this._logger.warn(message);
+				this._logger.warn(...messages);
 			},
 
-			info: (message: string): void => {
+			info: (...messages: string[]): void => {
 				if (!logger.canSend(LogLevel.INFO)) return;
 
-				this._logger.info(message);
+				this._logger.info(...messages);
 			},
 
-			debug: (message: string): void => {
+			debug: (...messages: string[]): void => {
 				if (!logger.canSend(LogLevel.DEBUG)) return;
 
-				this._logger.debug(message);
+				this._logger.debug(...messages);
 			},
 
-			error: (message: string): void => {
+			error: (...messages: string[]): void => {
 				if (!logger.canSend(LogLevel.ERROR)) return;
 
-				this._logger.error(message);
+				this._logger.error(...messages);
 			},
 
 			format: (message: string): string => message,
