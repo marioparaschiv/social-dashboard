@@ -73,8 +73,6 @@ class Client extends TelegramClient {
 		const listeners = getTelegramListeners();
 		const matchedListeners: TelegramListener[] = [];
 
-		console.log(origin.className);
-
 		switch (origin.className) {
 			case 'Channel': {
 				const filtered = listeners.filter((listener) => channelPredicate(listener, event, author, origin, reply));
