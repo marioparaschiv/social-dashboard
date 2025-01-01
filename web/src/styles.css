@@ -31,9 +31,11 @@
 		flex-direction: column;
 	}
 
-  :root {
-    --radius: 0.5rem;
+	:root {
+		--radius: 0.5rem;
+	}
 
+  [data-theme='light'] {
 		--border: 0 0% 85%;
 		--background: 0 0% 100%;
 		--foreground: 0 0% 0%;
@@ -44,4 +46,86 @@
 		--background: 0 0% 0;
 		--foreground: 0 0% 100%;
   }
+
+	[data-theme='light'] .prose {
+		--tw-prose-body: #000000;
+		--tw-prose-headings: #000000;
+		--tw-prose-lead: #262626;
+		--tw-prose-links: #2563eb;
+		--tw-prose-bold: #000000;
+		--tw-prose-counters: #525252;
+		--tw-prose-bullets: #737373;
+		--tw-prose-hr: #d4d4d4;
+		--tw-prose-quotes: #000000;
+		--tw-prose-quote-borders: #d4d4d4;
+		--tw-prose-captions: #525252;
+		--tw-prose-kbd: #000000;
+		--tw-prose-kbd-shadows: 0 0 0;
+		--tw-prose-code: #000000;
+		--tw-prose-pre-code: #262626;
+		--tw-prose-pre-bg: #fafafa;
+		--tw-prose-th-borders: #a3a3a3;
+		--tw-prose-td-borders: #d4d4d4;
+
+		/* Invert theme (dark mode) */
+		--tw-prose-invert-body: #ffffff;
+		--tw-prose-invert-headings: #ffffff;
+		--tw-prose-invert-lead: #d1d5db;
+		--tw-prose-invert-links: #3b82f6;
+		--tw-prose-invert-bold: #ffffff;
+		--tw-prose-invert-counters: #9ca3af;
+		--tw-prose-invert-bullets: #4b5563;
+		--tw-prose-invert-hr: #262626;
+		--tw-prose-invert-quotes: #ffffff;
+		--tw-prose-invert-quote-borders: #262626;
+		--tw-prose-invert-captions: #9ca3af;
+		--tw-prose-invert-kbd: #ffffff;
+		--tw-prose-invert-kbd-shadows: 255 255 255;
+		--tw-prose-invert-code: #ffffff;
+		--tw-prose-invert-pre-code: #e5e7eb;
+		--tw-prose-invert-pre-bg: rgba(0, 0, 0, 0.5);
+		--tw-prose-invert-th-borders: #404040;
+		--tw-prose-invert-td-borders: #262626;
+	}
+
+	[data-theme='dark'] .prose {
+		--tw-prose-body: #ffffff;
+		--tw-prose-headings: #ffffff;
+		--tw-prose-lead: #d1d5db;
+		--tw-prose-links: #3b82f6;
+		--tw-prose-bold: #ffffff;
+		--tw-prose-counters: #9ca3af;
+		--tw-prose-bullets: #4b5563;
+		--tw-prose-hr: #262626;
+		--tw-prose-quotes: #ffffff;
+		--tw-prose-quote-borders: #262626;
+		--tw-prose-captions: #9ca3af;
+		--tw-prose-kbd: #ffffff;
+		--tw-prose-kbd-shadows: 255 255 255;
+		--tw-prose-code: #ffffff;
+		--tw-prose-pre-code: #e5e7eb;
+		--tw-prose-pre-bg: rgba(0, 0, 0, 0.5);
+		--tw-prose-th-borders: #404040;
+		--tw-prose-td-borders: #262626;
+
+		/* Invert theme colors would be light mode, adjusted for contrast */
+		--tw-prose-invert-body: #171717;
+		--tw-prose-invert-headings: #000000;
+		--tw-prose-invert-lead: #525252;
+		--tw-prose-invert-links: #2563eb;
+		--tw-prose-invert-bold: #000000;
+		--tw-prose-invert-counters: #737373;
+		--tw-prose-invert-bullets: #a3a3a3;
+		--tw-prose-invert-hr: #e5e5e5;
+		--tw-prose-invert-quotes: #000000;
+		--tw-prose-invert-quote-borders: #e5e5e5;
+		--tw-prose-invert-captions: #737373;
+		--tw-prose-invert-kbd: #000000;
+		--tw-prose-invert-kbd-shadows: 0 0 0;
+		--tw-prose-invert-code: #000000;
+		--tw-prose-invert-pre-code: #262626;
+		--tw-prose-invert-pre-bg: #fafafa;
+		--tw-prose-invert-th-borders: #d4d4d4;
+		--tw-prose-invert-td-borders: #e5e5e5;
+	}
 }

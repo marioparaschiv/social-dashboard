@@ -22,7 +22,16 @@ function Feed() {
 	const [password, setPassword] = useState('');
 	const backend = useBackend();
 
-	const data = useMemo(() => splitBy(backend.data, 'groups', (a, b) => a.savedAt - b.savedAt), [backend.data]);
+	// const data = useMemo(() => splitBy(backend.data, 'groups', (a, b) => a.savedAt - b.savedAt), [backend.data]);
+
+	const data = useMemo(() => {
+		console.log('Messages:', backend.data); // Log incoming messages
+		console.log('Category Order:', config.categoryOrder); // Log category order
+		const result = splitBy(backend.data, 'groups', (a, b) => a.savedAt - b.savedAt);
+		console.log('Split Result:', result); // Log the result
+		return result;
+	}, [backend.data]);
+
 	const groups = useMemo(() => {
 		const keys = Object.keys(data);
 

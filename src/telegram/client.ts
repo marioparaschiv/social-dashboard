@@ -125,7 +125,7 @@ class Client extends TelegramClient {
 			attachments,
 			listeners: [...new Set(matchedListeners.map(l => l.name))],
 			groups: [...new Set(matchedListeners.map(l => l.group))],
-			content: event.message.rawText,
+			content: this.getContent(event.message),
 			parameters: {
 				accountIndex: this.accountIndex,
 				messageId: event.message.id.toString(),
@@ -135,6 +135,37 @@ class Client extends TelegramClient {
 		};
 
 		Storage.add(item);
+	}
+
+	getContent(message: Api.Message) {
+		let content = message.rawText;
+
+		const entities = (message.entities?.filter(e => e.className === 'MessageEntityTextUrl') ?? []).sort((a, b) => b.offset - a.offset);
+		const offsets = [];
+
+		for (const entity of entities as (Api.TypeMessageEntity & { originalOffset: number; url: string; })[]) {
+			const premades = offsets.filter(o => o.orig < entity.offset);
+			entity.originalOffset = entity.offset;
+
+			for (const premade of premades) entity.offset += premade.length;
+
+			const name = content.substr(entity.offset, entity.length);
+			if (name === entity.url || name.startsWith('http')) continue;
+
+			const start = content.slice(0, entity.offset);
+			const end = content.slice(entity.offset + entity.length);
+
+			const replacement = name === entity.url ? entity.url : `[${name}](${entity.url})`;
+
+			offsets.push({
+				orig: entity.originalOffset ?? entity.offset,
+				length: replacement.length - entity.length
+			});
+
+			content = start + replacement + end;
+		}
+
+		return content;
 	}
 
 	async getFiles(message: Api.Message) {
