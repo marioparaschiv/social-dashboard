@@ -1,8 +1,16 @@
 module.exports = {
-	name: 'sd-backend', // Name of your application
-	script: 'src/index.ts', // Entry point of your application
-	interpreter: 'bun', // Bun interpreter
-	env: {
-		PATH: `${process.env.HOME}/.bun/bin:${process.env.PATH}`, // Add '~/.bun/bin/bun' to PATH
-	}
+	apps: [
+		{
+			name: 'sd-dashboard-backend',
+			script: 'src/index.ts',
+			interpreter: 'bun', // Bun interpreter
+			env: {
+				PATH: `${process.env.HOME}/.bun/bin:${process.env.PATH}`, // Add '~/.bun/bin/bun' to PATH
+			}
+		},
+		{
+			name: 'sd-dashboard',
+			script: 'start-web.sh'
+		},
+	]
 };
