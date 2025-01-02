@@ -1,8 +1,8 @@
 import { Skeleton } from '~/components/ui/skeleton';
+import { memo, useEffect, useState } from 'react';
 import { DispatchType } from '@shared/constants';
 import useBackend from '~/hooks/use-backend';
 import type { ImageResponse } from '@types';
-import { useEffect, useState } from 'react';
 import { openDataURL } from '~/utils';
 
 
@@ -35,7 +35,7 @@ interface BackendImageProps extends Omit<React.ComponentProps<'img'>, 'src'> {
 	type?: string;
 }
 
-function BackendImage({ hash, name = 'image.png', type = 'image/png', ...props }: BackendImageProps) {
+const BackendImage = memo(({ hash, name = 'image.png', type = 'image/png', ...props }: BackendImageProps) => {
 	const [src, setSrc] = useState<string | undefined>(cache[hash]);
 	const backend = useBackend();
 
@@ -67,6 +67,6 @@ function BackendImage({ hash, name = 'image.png', type = 'image/png', ...props }
 	if (!src) return <Skeleton {...props} />;
 
 	return <img {...props} role='button' onClick={() => openDataURL(src, name, type)} src={src} />;
-}
+});
 
 export default BackendImage;
