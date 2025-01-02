@@ -11,7 +11,7 @@ function splitBy<
 	for (const item of items) {
 		const value = item[key];
 
-		if (value === undefined || value === null) {
+		if (!value) {
 			out['unknown'].push(item);
 			continue;
 		}
