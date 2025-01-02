@@ -1,9 +1,10 @@
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from '~/components/ui/navigation-menu';
 import ThemeSwitcher from '~/components/theme-switcher';
 import { Cog, MessageSquareText } from 'lucide-react';
+import { memo } from 'react';
 
 
-function Header() {
+const Header = memo(() => {
 	return <header className='flex items-center w-full p-4 border-b'>
 		<NavigationMenu>
 			<NavigationMenuList>
@@ -21,7 +22,7 @@ function Header() {
 		</NavigationMenu>
 		<ThemeSwitcher className='ml-auto' />
 	</header>;
-}
+});
 
 
 export default Header;
