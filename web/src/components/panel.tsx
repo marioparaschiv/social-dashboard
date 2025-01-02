@@ -37,7 +37,7 @@ const PanelContent = memo(({ data, group }: PanelContentProps) => {
 	return <Virtuoso
 		data={data}
 		initialTopMostItemIndex={{ index: 'LAST' }}
-		followOutput
+		followOutput='smooth'
 		itemContent={(index, message) => <PanelListItem
 			data={data}
 			index={index}
