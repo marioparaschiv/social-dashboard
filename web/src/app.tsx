@@ -8,10 +8,7 @@ const router = createBrowserRouter(routes);
 
 function App() {
 	return <BackendProvider>
-		<RouterProvider
-			router={router}
-			future={{ v7_startTransition: true }}
-		/>
+		<RouterProvider router={router} />
 	</BackendProvider>;
 }
 

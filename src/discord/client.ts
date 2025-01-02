@@ -240,8 +240,8 @@ class Client {
 				const item: StoreItem<'discord'> = {
 					savedAt: Date.now(),
 					type: 'discord',
-					listeners: [...new Set(matchedListeners.map(l => l.name))],
-					groups: [...new Set(matchedListeners.map(l => l.group))],
+					listeners: [...new Set(matchedListeners.map(l => l.name).filter(Boolean))],
+					groups: [...new Set(matchedListeners.map(l => l.group).filter(Boolean))],
 					author: msg.author.username,
 					origin: await getDiscordEntityDetails(msg, guild, channel),
 					originAvatar,
