@@ -1,6 +1,10 @@
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { createContext, useCallback, useEffect, useRef, useState } from 'react';
-import { Dispatch, type StoreItem } from '@types';
+import { Dispatch, type RequestReply, type StoreItem } from '@types';
 import { DispatchType } from '@shared/constants';
+import { Button } from '~/components/ui/button';
+import { Input } from '~/components/ui/input';
+import { LoaderCircle } from 'lucide-react';
 import config from '@web-config.json';
 import { sleep } from '@shared/utils';
 
@@ -11,6 +15,8 @@ interface BackendContextProps {
 	state: SocketStates;
 	authenticated: boolean;
 	data: StoreItem[];
+	replyingTo: StoreItem | null;
+	replyTo: (item: StoreItem | null) => void;
 	send: (type: DispatchType, payload?: Record<PropertyKey, any>) => void;
 	on: (type: DispatchType, callback: (...args: any[]) => any) => () => void;
 	once: (type: DispatchType, callback: (...args: any[]) => any) => () => void;
@@ -21,6 +27,8 @@ interface BackendContextProps {
 
 export const BackendContext = createContext<BackendContextProps>({
 	send: () => void 0,
+	replyingTo: null,
+	replyTo: (item: StoreItem | null) => void 0,
 	data: [],
 	state: 'idle',
 	authenticated: false,
@@ -34,6 +42,12 @@ export const BackendContext = createContext<BackendContextProps>({
 export const listeners = new Map<DispatchType, Set<(payload: Record<PropertyKey, any>) => any>>();
 
 function BackendProvider({ children, ...props }: React.PropsWithChildren) {
+	// Replying
+	const [replyingTo, replyTo] = useState<StoreItem | null>(null);
+	const [replyLoading, setReplyLoading] = useState(false);
+	const [replyFailed, setReplyFailed] = useState(false);
+	const [replyContent, setReplyContent] = useState('');
+
 	const [{ data }, setData] = useState<{ data: StoreItem[]; }>({ data: [] });
 	const [authenticated, setAuthenticated] = useState<boolean>(false);
 	const [state, setState] = useState<SocketStates>('idle');
@@ -121,6 +135,8 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 		state,
 		authenticated,
 		data,
+		replyingTo,
+		replyTo,
 		send,
 		on,
 		off,
@@ -209,7 +225,73 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 		};
 	}, []);
 
-	return <BackendContext.Provider {...props} value={ctx} >
+	return <BackendContext.Provider {...props} value={ctx}>
+		<Dialog
+			open={!!replyingTo}
+			onOpenChange={(open) => {
+				if (!open) {
+					setReplyLoading(false);
+					setReplyFailed(false);
+					replyTo(null);
+				}
+			}}
+		>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Replying to {replyingTo?.author}</DialogTitle>
+				</DialogHeader>
+				<Input
+					placeholder='Hey! How are you?'
+					value={replyContent}
+					data-failed={replyFailed}
+					className='data-[failed=true]:!border-red-500 data-[failed=true]:border-2'
+					onChange={(e) => {
+						setReplyFailed(false);
+						setReplyContent(e.target.value ?? '');
+					}}
+				/>
+				{replyFailed && <span className='text-red-500'>Failed to reply to message. Does it still exist?</span>}
+				<DialogFooter className='w-full'>
+					<Button
+						type='submit'
+						className='w-full disabled:opacity-50'
+						size='sm'
+						disabled={replyLoading || !replyContent}
+						onClick={async () => {
+							if (!replyingTo) return;
+
+							setReplyLoading(true);
+							setReplyFailed(false);
+
+							const uuid = crypto.randomUUID();
+
+							send(DispatchType.REQUEST_REPLY, {
+								messageType: replyingTo.type,
+								content: replyContent,
+								parameters: replyingTo.parameters,
+								uuid
+							} as RequestReply);
+
+							const success = await new Promise<boolean>((resolve) => {
+								const remove = on(DispatchType.REPLY_RESPONSE, (payload) => {
+									if (payload.uuid !== uuid) return;
+
+									remove();
+									resolve(payload.success);
+								});
+							});
+
+							setReplyFailed(!success);
+							setReplyLoading(false);
+
+							if (success) replyTo(null);
+						}}
+					>
+						{replyLoading ? <LoaderCircle className='animate-spin' /> : 'Send'}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 		{children}
 	</BackendContext.Provider>;
 }

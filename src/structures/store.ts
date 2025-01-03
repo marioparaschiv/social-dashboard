@@ -2,26 +2,36 @@ import { EventEmitter } from 'node:events';
 
 
 class Store<T> extends EventEmitter {
-	storage = new Set<T>();
+	storage: T[] = [];
+	maxItems: number;
 
-	constructor(...args: ConstructorParameters<typeof Set<T>>) {
+	constructor(maxItems = 500) {
 		super();
-
-		this.storage = new Set<T>(...args);
+		this.maxItems = maxItems;
 	}
 
-	add(item: T): Set<T> {
-		this.storage.add(item);
-		this.emit('updated');
+	add(item: T): T[] {
+		// Add the new item to the beginning
+		this.storage.unshift(item);
 
+		// If the storage exceeds the limit, remove the last item
+		if (this.storage.length > this.maxItems) {
+			this.storage.pop();
+		}
+
+		this.emit('updated');
 		return this.storage;
 	}
 
 	delete(item: T): boolean {
-		const result = this.storage.delete(item);
-		if (result) this.emit('updated');
+		const index = this.storage.indexOf(item);
+		if (index !== -1) {
+			this.storage.splice(index, 1);
+			this.emit('updated');
+			return true;
+		}
 
-		return result;
+		return false;
 	}
 }
 

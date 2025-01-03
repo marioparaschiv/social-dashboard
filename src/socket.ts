@@ -45,7 +45,7 @@ server.on('connection', (ws: WebSocket) => {
 function onDataUpdate(ws: WebSocket) {
 	if (!ws.authenticated) return;
 
-	send(ws, DispatchType.DATA_UPDATE, { data: [...storage.storage.values()] });
+	send(ws, DispatchType.DATA_UPDATE, { data: storage.storage });
 }
 
 export function send(ws: WebSocket, type: DispatchType, payload: Record<PropertyKey, any> = {}) {

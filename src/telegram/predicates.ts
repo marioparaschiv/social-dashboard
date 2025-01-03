@@ -1,35 +1,78 @@
-import type { NewMessageEvent } from 'telegram/events';
 import type { TelegramListener } from '@types';
 import type { Api } from 'telegram';
 
 
-export function globalPredicate(listener: TelegramListener, chatId: string, author: Api.User | Api.Channel) {
-	if (listener.chatId && chatId !== listener.chatId) return false;
+export function globalPredicate(
+	listener: TelegramListener,
+	chatId: string,
+	author: Api.User | Api.Channel,
+	reply: Api.Message,
+	replyAuthor: Api.User
+) {
+	if (listener.chatId && chatId !== listener.chatId) {
+		return false;
+	}
+
+	if (!listener.allowBots && author.className === 'User' && author.bot) {
+		return false;
+	}
 
 	if (listener.users && author.className !== 'User') {
 		return false;
 	}
 
-	if (listener.users && !(author.usernames ?? []).some(u => listener.users.includes(u.username))) {
+	const usernames = author.usernames?.map(u => u.username) ?? (author.username ? [author.username] : []);
+
+	if (listener.users && !usernames.some(u => listener.users.includes(u))) {
+		return false;
+	}
+
+	if (listener.blacklistedUsers?.length && usernames.some(u => listener.blacklistedUsers.includes(u))) {
+		return false;
+	}
+
+	if (listener.replyingTo?.length && !reply) {
+		return false;
+	}
+
+	if (listener.replyingTo?.length && replyAuthor.className !== 'User') {
+		return false;
+	}
+
+	const replyAuthorUsernames = replyAuthor?.usernames?.map(u => u.username) ?? (replyAuthor?.username ? [replyAuthor.username] : []);
+
+	if (listener.replyingTo?.length && !replyAuthorUsernames.some(u => listener.replyingTo.includes(u))) {
 		return false;
 	}
 
 	return true;
 }
 
-export function chatPredicate(listener: TelegramListener, event: NewMessageEvent, author: Api.User | Api.Channel, chat: Api.Chat) {
-	if (!globalPredicate(listener, chat.id.toString(), author)) return false;
+export function chatPredicate(
+	listener: TelegramListener,
+	author: Api.User | Api.Channel,
+	chat: Api.Chat,
+	reply: Api.Message,
+	replyAuthor: Api.User
+) {
+	if (!globalPredicate(listener, chat.id.toString(), author, reply, replyAuthor)) return false;
 
 	return true;
 }
 
-export function channelPredicate(listener: TelegramListener, event: NewMessageEvent, author: Api.User | Api.Channel, channel: Api.Channel, reference: Api.Message) {
-	if (!globalPredicate(listener, channel.id.toString(), author)) return false;
+export function channelPredicate(
+	listener: TelegramListener,
+	author: Api.User | Api.Channel,
+	channel: Api.Channel,
+	reply: Api.Message,
+	replyAuthor: Api.User
+) {
+	if (!globalPredicate(listener, channel.id.toString(), author, reply, replyAuthor)) return false;
 
 	// Forums
 	if (listener.subchannels !== undefined) {
-		const topic = reference?.action?.className == 'MessageActionTopicCreate' ? reference.action.title : null;
-		const includeMainChannel = listener.includeMainSubchannel && !reference;
+		const topic = reply?.action?.className == 'MessageActionTopicCreate' ? reply.action.title : null;
+		const includeMainChannel = listener.includeMainSubchannel && !reply;
 		const topicMatches = topic && listener.subchannels.includes(topic);
 
 		if (topic && !topicMatches) return false;
@@ -39,8 +82,16 @@ export function channelPredicate(listener: TelegramListener, event: NewMessageEv
 	return true;
 }
 
-export function dmPredicate(listener: TelegramListener, event: NewMessageEvent, author: Api.User | Api.Channel, user: Api.User | Api.PeerUser) {
-	if (!globalPredicate(listener, ((user as Api.User).id ?? (user as Api.PeerUser).userId).toString(), author)) return false;
+export function dmPredicate(
+	listener: TelegramListener,
+	author: Api.User | Api.Channel,
+	user: Api.User | Api.PeerUser,
+	reply: Api.Message,
+	replyAuthor: Api.User
+) {
+	const userId = ((user as Api.User).id ?? (user as Api.PeerUser).userId).toString();
+
+	if (!globalPredicate(listener, userId, author, reply, replyAuthor)) return false;
 	if (!(listener.allowDMs ?? true)) return false;
 
 	return true;

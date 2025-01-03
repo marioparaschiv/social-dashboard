@@ -1,17 +1,13 @@
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip';
 import MessageAttachment from '~/components/message-attachment';
-import type { RequestReply, StoreItem, User } from '@types';
 import BackendImage from '~/components/backend-image';
-import { LoaderCircle, Reply } from 'lucide-react';
-import { DispatchType } from '@shared/constants';
-import { Button } from '~/components/ui/button';
 import Timestamp from '~/components/timestamp';
-import { Input } from '~/components/ui/input';
+import type { StoreItem, User } from '@types';
 import useBackend from '~/hooks/use-backend';
 import Markdown from '~/components/markdown';
-import { useMemo, useState } from 'react';
 import config from '@web-config.json';
+import { Reply } from 'lucide-react';
+import { useMemo } from 'react';
 import { cn } from '~/utils';
 
 
@@ -21,10 +17,6 @@ interface MessageProps extends React.ComponentProps<'li'> {
 
 
 function Message({ message, ...props }: MessageProps) {
-	const [replyLoading, setReplyLoading] = useState(false);
-	const [replyFailed, setReplyFailed] = useState(false);
-	const [replyContent, setReplyContent] = useState('');
-	const [replyOpen, setReplyOpen] = useState(false);
 	const backend = useBackend();
 
 	const userColours = config[message.type]?.userColours;
@@ -34,80 +26,17 @@ function Message({ message, ...props }: MessageProps) {
 	const otherAttachments = useMemo(() => message.attachments.filter(a => !a.type.startsWith('image/')), [message]);
 
 	return <li
-		data-is-replying={replyOpen}
+		data-is-replying={backend.replyingTo === message}
 		className='relative flex gap-2 items-center group hover:bg-foreground/10 rounded-md data-[is-replying=true]:bg-amber-600/20'
 		{...props}
 	>
 		<div className='group-hover:flex absolute hidden border right-1 top-1 rounded-lg'>
-			<Dialog
-				open={replyOpen}
-				onOpenChange={(open) => {
-					setReplyOpen(open);
-
-					if (!open) {
-						setReplyLoading(false);
-						setReplyFailed(false);
-					}
-				}}
+			<button
+				onClick={() => backend.replyTo(message)}
+				className='flex gap-1 items-center text-xs bg-background/40 hover:bg-background/60 rounded-md p-1'
 			>
-				<DialogTrigger asChild>
-					<button className='flex gap-1 items-center text-xs bg-background/40 hover:bg-background/60 rounded-md p-1'>
-						<Reply size={18} /> Reply
-					</button>
-				</DialogTrigger>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Replying to {message.author}</DialogTitle>
-					</DialogHeader>
-					<Input
-						placeholder='Hey! How are you?'
-						value={replyContent}
-						data-failed={replyFailed}
-						className='data-[failed=true]:!border-red-500 data-[failed=true]:border-2'
-						onChange={(e) => {
-							setReplyFailed(false);
-							setReplyContent(e.target.value ?? '');
-						}}
-					/>
-					{replyFailed && <span className='text-red-500'>Failed to reply to message. Does it still exist?</span>}
-					<DialogFooter className='w-full'>
-						<Button
-							className='w-full disabled:opacity-50'
-							size='sm'
-							disabled={replyLoading || !replyContent}
-							onClick={async () => {
-								setReplyLoading(true);
-								setReplyFailed(false);
-
-								const uuid = crypto.randomUUID();
-
-								backend.send(DispatchType.REQUEST_REPLY, {
-									messageType: message.type,
-									content: replyContent,
-									parameters: message.parameters,
-									uuid
-								} as RequestReply);
-
-								const success = await new Promise<boolean>((resolve) => {
-									const remove = backend.on(DispatchType.REPLY_RESPONSE, (payload) => {
-										if (payload.uuid !== uuid) return;
-
-										remove();
-										resolve(payload.success);
-									});
-								});
-
-								setReplyFailed(!success);
-								setReplyLoading(false);
-
-								if (success) setReplyOpen(false);
-							}}
-						>
-							{replyLoading ? <LoaderCircle className='animate-spin' /> : 'Send'}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+				<Reply size={18} /> Reply
+			</button>
 		</div>
 		<div className='flex-shrink-0 m-2 self-start'>
 			{message.authorAvatar === 'none' ? <div className='w-11 h-11 rounded-full bg-foreground/20 flex items-center justify-center'>
@@ -120,7 +49,7 @@ function Message({ message, ...props }: MessageProps) {
 				name='avatar.png'
 			/>}
 		</div>
-		<div className='flex flex-col'>
+		<div className='flex flex-col overflow-hidden'>
 			<div className='flex gap-2 items-center'>
 				<h1 className='font-bold text-base' style={{ color: authorColor }}>
 					{message.author}
@@ -148,7 +77,14 @@ function Message({ message, ...props }: MessageProps) {
 					</Tooltip>
 				</TooltipProvider>
 			</div>
-			<p className='prose [&>*]:text-inherit text-foreground'>
+			{message.reply && <div className='bg-foreground/15 py-1 px-2 rounded-lg text-sm my-1'>
+				<span className='font-bold'>{message.reply.author}</span>
+				<p className='truncate whitespace-nowrap'>{message.reply.content}</p>
+				{message.reply.attachmentCount !== 0 && <p className='font-light italic'>
+					{message.reply.attachmentCount} attachment(s)
+				</p>}
+			</div>}
+			<p className='prose'>
 				<Markdown>{message.content}</Markdown>
 			</p>
 			{/* Images */}

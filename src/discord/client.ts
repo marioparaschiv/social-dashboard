@@ -4,6 +4,7 @@ import { getDiscordListeners, getDiscordReplacements } from '~/config';
 import { getDiscordEntityDetails } from '~/utils/get-entity-details';
 import { createLogger } from '~/structures/logger';
 import { stripToken } from '~/utils/strip';
+import { getMessage } from '~/discord/api';
 import { cacheItem } from '~/file-cache';
 import { fetchBuffer } from '~/utils';
 import config from '@config.json';
@@ -174,7 +175,7 @@ class Client {
 				const channel = this.channels.get(msg.channel_id);
 				const guild = this.guilds.get(msg.guild_id);
 
-				const matchedListeners = getDiscordListeners().filter(listener => {
+				let matchedListeners = getDiscordListeners().filter(listener => {
 					if (listener.chatId && msg.channel_id !== listener.chatId) {
 						return false;
 					}
@@ -191,16 +192,32 @@ class Client {
 						return false;
 					}
 
+					if (listener.blacklistedUsers?.length && listener.blacklistedUsers.includes(msg.author.username)) {
+						return false;
+					}
+
 					return true;
 				}) ?? [];
 
 				if (!matchedListeners?.length) return;
 
-				// const reply = msg.message_reference && (await getMessage({
-				// 	channel: msg.message_reference.channel_id,
-				// 	message: msg.message_reference.message_id,
-				// 	token: this.token
-				// }));
+				const reply = msg.message_reference && await getMessage({
+					channel: msg.message_reference.channel_id,
+					message: msg.message_reference.message_id,
+					token: this.token
+				});
+
+				matchedListeners = matchedListeners.filter(listener => {
+					if (listener.replyingTo?.length && !reply) {
+						return false;
+					}
+
+					if (listener.replyingTo?.length && !listener.replyingTo.includes(reply.author.username)) {
+						return false;
+					}
+
+					return true;
+				});
 
 				const content = this.getContent(msg);
 
@@ -248,6 +265,11 @@ class Client {
 					authorAvatar,
 					content,
 					attachments,
+					reply: reply ? {
+						attachmentCount: reply.attachments.length,
+						author: reply.author.username,
+						content: reply.content
+					} : null,
 					parameters: {
 						messageId: msg.id,
 						channelId: channel.id,

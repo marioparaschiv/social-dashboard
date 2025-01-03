@@ -61,6 +61,8 @@ export interface DiscordListener {
 	chatId?: string;
 	allowBots?: boolean;
 	allowDMs?: boolean;
+	replyingTo?: string[];
+	blacklistedUsers?: string[];
 	users?: string;
 }
 
@@ -69,7 +71,10 @@ export interface TelegramListener {
 	group: string;
 	chatId?: string;
 	users?: string[];
+	allowBots?: boolean;
 	allowDMs?: boolean;
+	replyingTo?: string[];
+	blacklistedUsers?: string[];
 	includeMainSubchannel?: boolean;
 	subchannels?: string[];
 }
@@ -103,6 +108,19 @@ export interface StoreItem<T extends string = StoreItemTypes, K = StoreItemParam
 	type: T;
 	groups: string[];
 	author: string;
+	// author: {
+	// 	name: string;
+	// 	avatar: string;
+	// };
+	// origin: {
+	// 	entity:  T extends 'telegram' ? Awaited<ReturnType<typeof getTelegramEntityDetails>> : T extends 'discord' ? Awaited<ReturnType<typeof getDiscordEntityDetails>> : never;
+	// 	avatar: string;
+	// };
+	reply: {
+		author: string;
+		content: string;
+		attachmentCount: number;
+	} | null;
 	listeners: string[];
 	origin: T extends 'telegram' ? Awaited<ReturnType<typeof getTelegramEntityDetails>> : T extends 'discord' ? Awaited<ReturnType<typeof getDiscordEntityDetails>> : never;
 	originAvatar: string;

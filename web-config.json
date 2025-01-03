@@ -14,8 +14,8 @@
 		"hey|hello": "rgba(255, 0, 0)"
 	},
 	"categoryOrder": [
-		"Low Priority",
-		"Medium Priority",
-		"High Priority"
+		"High",
+		"Medium",
+		"Low"
 	]
 }

@@ -29,7 +29,17 @@ function Feed() {
 
 		return keys
 			.filter(d => data[d]?.length !== 0)
-			.sort((a, b) => config.categoryOrder.indexOf(a) - config.categoryOrder.indexOf(b));
+			.sort((a, b) => {
+				// Handle items not in categoryOrder by putting them at the end
+				const indexA = config.categoryOrder.indexOf(a);
+				const indexB = config.categoryOrder.indexOf(b);
+
+				// If either item isn't found, put it at the end
+				if (indexA === -1) return 1;
+				if (indexB === -1) return -1;
+
+				return indexA - indexB;
+			});
 	}, [data]);
 
 	return <Page className='flex flex-col max-h-dvh h-dvh' containerClassName='overflow-hidden'>

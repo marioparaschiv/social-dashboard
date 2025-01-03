@@ -15,6 +15,7 @@ import mimeTypes from 'mime-types';
 import Storage from '~/storage';
 import { hash } from '~/utils';
 import { Api } from 'telegram';
+import { getDisplayName } from 'telegram/utils';
 
 
 interface ClientOptions {
@@ -65,6 +66,7 @@ class Client extends TelegramClient {
 
 		const origin = await event.getChat() as Api.Chat | Api.Channel | Api.PeerUser | Api.User;
 		const reply = await event.message.getReplyMessage();
+		const replyAuthor = await reply?.getSender();
 		if (!origin) return;
 
 		const author = await event.message.getSender();
@@ -75,18 +77,18 @@ class Client extends TelegramClient {
 
 		switch (origin.className) {
 			case 'Channel': {
-				const filtered = listeners.filter((listener) => channelPredicate(listener, event, author, origin, reply));
+				const filtered = listeners.filter((listener) => channelPredicate(listener, author, origin, reply, replyAuthor as Api.User));
 				if (filtered.length) matchedListeners.push(...filtered);
 			} break;
 
 			case 'Chat': {
-				const filtered = listeners.filter((listener) => chatPredicate(listener, event, author, origin));
+				const filtered = listeners.filter((listener) => chatPredicate(listener, author, origin, reply, replyAuthor as Api.User));
 				if (filtered.length) matchedListeners.push(...filtered);
 			} break;
 
 			case 'PeerUser':
 			case 'User': {
-				const filtered = listeners.filter((listener) => dmPredicate(listener, event, author, origin));
+				const filtered = listeners.filter((listener) => dmPredicate(listener, author, origin, reply, replyAuthor as Api.User));
 				if (filtered.length) matchedListeners.push(...filtered);
 			} break;
 		}
@@ -118,7 +120,7 @@ class Client extends TelegramClient {
 
 		const item: StoreItem<'telegram'> = {
 			type: 'telegram',
-			author: author.username ?? (author as Api.Channel).title ?? 'Unknown',
+			author: getDisplayName(author) ?? 'Unknown',
 			authorAvatar,
 			origin: await getTelegramEntityDetails(origin, reply),
 			originAvatar,
@@ -126,6 +128,11 @@ class Client extends TelegramClient {
 			listeners: [...new Set(matchedListeners.map(l => l.name))],
 			groups: [...new Set(matchedListeners.map(l => l.group))],
 			content: this.getContent(event.message),
+			reply: reply ? {
+				author: getDisplayName(replyAuthor),
+				content: this.getContent(reply),
+				attachmentCount: reply.document || reply.media ? 1 : 0
+			} : null,
 			parameters: {
 				accountIndex: this.accountIndex,
 				messageId: event.message.id.toString(),
@@ -136,6 +143,8 @@ class Client extends TelegramClient {
 
 		Storage.add(item);
 	}
+
+
 
 	getContent(message: Api.Message) {
 		let content = message.rawText;

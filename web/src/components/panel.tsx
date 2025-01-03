@@ -1,9 +1,9 @@
+import { forwardRef, memo, useCallback, useRef, type ComponentRef } from 'react';
 import { ResizablePanel } from '~/components/ui/resizable';
 import type { StoreItem, StoreItemTypes } from '@types';
 import { Separator } from '~/components/ui/separator';
 import Message from '~/components/message';
 import { Virtuoso } from 'react-virtuoso';
-import { forwardRef, memo } from 'react';
 
 
 interface PanelOptions {
@@ -34,10 +34,58 @@ interface PanelContentProps {
 }
 
 const PanelContent = memo(({ data, group }: PanelContentProps) => {
+	const virtuosoRef = useRef<ComponentRef<typeof Virtuoso>>(null);
+	const timeoutRef = useRef<Timer | null>(null);
+	const isScrollingRef = useRef(false);
+	const lastScrollTopRef = useRef(0);
+
+	// Track when user is manually scrolling
+	const handleScroll = useCallback<React.UIEventHandler<HTMLDivElement>>((e) => {
+		if (!virtuosoRef.current) return;
+
+		const target = e.target as HTMLElement;
+		const scrollTop = target.scrollTop;
+		const maxScrollTop = target.scrollHeight - target.clientHeight;
+		const isScrollingDown = scrollTop > lastScrollTopRef.current;
+		const isNearBottom = maxScrollTop - scrollTop < 50;
+
+		// Clear any existing timeout
+		if (timeoutRef.current) {
+			clearTimeout(timeoutRef.current);
+		}
+
+		if (isScrollingDown && isNearBottom) {
+			isScrollingRef.current = false;
+			virtuosoRef.current.autoscrollToBottom();
+		} else if (!isScrollingDown) {
+			isScrollingRef.current = true;
+
+			// Re-enable autoscroll after 5 seconds of no manual scrolling
+			timeoutRef.current = setTimeout(() => {
+				isScrollingRef.current = false;
+			}, 5000);
+		}
+
+		lastScrollTopRef.current = scrollTop;
+	}, []);
+
+	const followOutput = useCallback(() => {
+		return !isScrollingRef.current;
+	}, []);
+
 	return <Virtuoso
 		data={data}
+		className='overflow-x-clip'
+		ref={virtuosoRef}
+		totalCount={data.length}
 		initialTopMostItemIndex={{ index: 'LAST' }}
-		followOutput='smooth'
+		followOutput={followOutput}
+		onScroll={handleScroll}
+		atBottomStateChange={atBottom => {
+			if (atBottom) {
+				isScrollingRef.current = false;
+			}
+		}}
 		itemContent={(index, message) => <PanelListItem
 			data={data}
 			index={index}
