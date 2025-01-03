@@ -7,6 +7,7 @@ import { Input } from '~/components/ui/input';
 import { LoaderCircle } from 'lucide-react';
 import config from '@web-config.json';
 import { sleep } from '@shared/utils';
+import { uuid } from '@shared/utils';
 
 
 type SocketStates = 'idle' | 'connecting' | 'connected' | 'ready';
@@ -263,18 +264,18 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 							setReplyLoading(true);
 							setReplyFailed(false);
 
-							const uuid = crypto.randomUUID();
+							const id = uuid();
 
 							send(DispatchType.REQUEST_REPLY, {
 								messageType: replyingTo.type,
 								content: replyContent,
 								parameters: replyingTo.parameters,
-								uuid
+								uuid: id
 							} as RequestReply);
 
 							const success = await new Promise<boolean>((resolve) => {
 								const remove = on(DispatchType.REPLY_RESPONSE, (payload) => {
-									if (payload.uuid !== uuid) return;
+									if (payload.uuid !== id) return;
 
 									remove();
 									resolve(payload.success);
