@@ -1,12 +1,13 @@
 import { OPCodes, ConnectionState, HELLO_TIMEOUT, HEARTBEAT_MAX_RESUME_THRESHOLD, MAX_CONNECTION_RETRIES } from '~/discord/constants';
+import { getDefaults, getDiscordListeners, getDiscordReplacements } from '~/config';
 import type { Guild, Message, StoreItem, StoreItemAttachment, User } from '@types';
-import { getDiscordListeners, getDiscordReplacements } from '~/config';
 import { getDiscordEntityDetails } from '~/utils/get-entity-details';
 import { createLogger } from '~/structures/logger';
 import { stripToken } from '~/utils/strip';
 import { getMessage } from '~/discord/api';
 import { cacheItem } from '~/file-cache';
 import { fetchBuffer } from '~/utils';
+import mimeTypes from 'mime-types';
 import config from '@config.json';
 import storage from '~/storage';
 import { hash } from '~/utils';
@@ -133,9 +134,10 @@ class Client {
 				};
 
 				for (const guild of payload.d.guilds ?? []) {
+					if (!guild) continue;
 					this.guilds.set(guild.id, guild);
 
-					for (const channel of guild.channels) {
+					for (const channel of guild.channels ?? []) {
 						this.channels.set(channel.id, channel);
 					}
 				};
@@ -175,16 +177,18 @@ class Client {
 				const channel = this.channels.get(msg.channel_id);
 				const guild = this.guilds.get(msg.guild_id);
 
+				const defaults = getDefaults();
+
 				let matchedListeners = getDiscordListeners().filter(listener => {
 					if (listener.chatId && msg.channel_id !== listener.chatId) {
 						return false;
 					}
 
-					if (!listener.allowBots && msg.author.bot) {
+					if (!(listener.allowBots ?? defaults.allowBots) && msg.author.bot) {
 						return false;
 					}
 
-					if (!(listener.allowDMs ?? true) && [1, 3].includes(channel.type)) {
+					if (!(listener.allowDMs ?? defaults.allowDMs) && [1, 3].includes(channel.type)) {
 						return false;
 					}
 
@@ -192,7 +196,7 @@ class Client {
 						return false;
 					}
 
-					if (listener.blacklistedUsers?.length && listener.blacklistedUsers.includes(msg.author.username)) {
+					if ((listener.blacklistedUsers ?? defaults.blacklistedUsers)?.length && listener.blacklistedUsers.includes(msg.author.username)) {
 						return false;
 					}
 
@@ -227,7 +231,7 @@ class Client {
 				).catch(() => null);
 
 				const authorAvatar = avatarBuffer ? hash(avatarBuffer) : null;
-				if (authorAvatar) cacheItem(authorAvatar, avatarBuffer);
+				if (authorAvatar) cacheItem(authorAvatar, 'png', avatarBuffer);
 
 				const originAvatarHash = msg.guild_id ? guild?.icon : channel.icon;
 
@@ -236,7 +240,7 @@ class Client {
 				).catch(() => null) : null;
 
 				const originAvatar = originAvatarHash ? hash(originAvatarBuffer) : authorAvatar;
-				if (originAvatar) cacheItem(originAvatar, originAvatarBuffer);
+				if (originAvatar) cacheItem(originAvatar, 'png', originAvatarBuffer);
 
 				const attachments: StoreItemAttachment[] = [];
 				for (const attachment of msg.attachments ?? []) {
@@ -244,25 +248,34 @@ class Client {
 					if (!buffer) continue;
 
 					const uuid = hash(buffer);
+					const ext = mimeTypes.extension(attachment.content_type ?? 'application/octet-stream') || '';
 
-					cacheItem(uuid, buffer);
+					cacheItem(uuid, ext, buffer);
+
 
 					attachments.push({
 						name: attachment.filename,
 						type: attachment.content_type,
+						ext,
 						identifier: uuid
 					});
 				}
+
+				const groups = [...new Set(matchedListeners.map(l => l.group).filter(Boolean))];
 
 				const item: StoreItem<'discord'> = {
 					savedAt: Date.now(),
 					type: 'discord',
 					listeners: [...new Set(matchedListeners.map(l => l.name).filter(Boolean))],
-					groups: [...new Set(matchedListeners.map(l => l.group).filter(Boolean))],
-					author: msg.author.username,
-					origin: await getDiscordEntityDetails(msg, guild, channel),
-					originAvatar,
-					authorAvatar,
+					groups,
+					author: {
+						name: msg.author.username,
+						avatar: authorAvatar
+					},
+					origin: {
+						entity: await getDiscordEntityDetails(msg, guild, channel),
+						avatar: originAvatar,
+					},
 					content,
 					attachments,
 					reply: reply ? {
@@ -278,7 +291,9 @@ class Client {
 					}
 				};
 
-				storage.add(item);
+				for (const group of groups) {
+					storage.add(group, item);
+				}
 			} break;
 		}
 	}

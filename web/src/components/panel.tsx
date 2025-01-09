@@ -88,9 +88,9 @@ const PanelContent = memo(({ data, group }: PanelContentProps) => {
 		}}
 		itemContent={(index, message) => <PanelListItem
 			data={data}
+			key={`message-${message.savedAt}`}
 			index={index}
 			message={message}
-			group={group}
 		/>}
 		components={{
 			Item: forwardRef((props, ref: React.ForwardedRef<HTMLDivElement>) => (
@@ -107,15 +107,12 @@ const PanelContent = memo(({ data, group }: PanelContentProps) => {
 interface PanelListItemProps {
 	data: StoreItem<StoreItemTypes>[];
 	index: number;
-	group: string;
 	message: StoreItem<StoreItemTypes>;
 }
 
-const PanelListItem = memo(({ data, index, message, group }: PanelListItemProps) => {
+const PanelListItem = memo(({ data, index, message }: PanelListItemProps) => {
 	return <div className='flex flex-col mt-1'>
-		<Message
-			key={group + '-message-' + index}
-			message={message}
+		<Message message={message}
 		/>
 		{index !== (data.length - 1) && <Separator className='!bg-foreground/10 mt-1' />}
 		{index === (data.length - 1) && <div className='mb-1' />}

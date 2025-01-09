@@ -1,6 +1,10 @@
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '~/components/ui/carousel';
+import { createContext, createElement, useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
-import { createContext, useCallback, useEffect, useRef, useState } from 'react';
 import { Dispatch, type RequestReply, type StoreItem } from '@types';
+import { WheelGesturesPlugin } from 'embla-carousel-wheel-gestures';
+import { useCarousel } from '~/components/ui/carousel';
+import BackendMedia from '~/components/backend-media';
 import { DispatchType } from '@shared/constants';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
@@ -15,9 +19,14 @@ type SocketStates = 'idle' | 'connecting' | 'connected' | 'ready';
 interface BackendContextProps {
 	state: SocketStates;
 	authenticated: boolean;
-	data: StoreItem[];
+	data: Record<PropertyKey, StoreItem[]>;
+
+	// Local data
 	replyingTo: StoreItem | null;
 	replyTo: (item: StoreItem | null) => void;
+	viewingImages: StoreItem['attachments'];
+	viewImages: (attachments: StoreItem['attachments']) => void;
+
 	send: (type: DispatchType, payload?: Record<PropertyKey, any>) => void;
 	on: (type: DispatchType, callback: (...args: any[]) => any) => () => void;
 	once: (type: DispatchType, callback: (...args: any[]) => any) => () => void;
@@ -27,12 +36,16 @@ interface BackendContextProps {
 }
 
 export const BackendContext = createContext<BackendContextProps>({
-	send: () => void 0,
-	replyingTo: null,
-	replyTo: (item: StoreItem | null) => void 0,
-	data: [],
 	state: 'idle',
 	authenticated: false,
+	data: {},
+
+	replyingTo: null,
+	replyTo: () => void 0,
+	viewingImages: [],
+	viewImages: () => void 0,
+
+	send: () => void 0,
 	on: () => () => void 0,
 	once: () => () => void 0,
 	off: () => void 0,
@@ -44,12 +57,15 @@ export const listeners = new Map<DispatchType, Set<(payload: Record<PropertyKey,
 
 function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 	// Replying
+	const replyButtonRef = useRef<ComponentRef<'button'>>(null);
 	const [replyingTo, replyTo] = useState<StoreItem | null>(null);
 	const [replyLoading, setReplyLoading] = useState(false);
 	const [replyFailed, setReplyFailed] = useState(false);
 	const [replyContent, setReplyContent] = useState('');
 
-	const [{ data }, setData] = useState<{ data: StoreItem[]; }>({ data: [] });
+	const [viewingImages, viewImages] = useState<StoreItem['attachments']>([]);
+
+	const [data, setData] = useState<{ data: StoreItem[]; }>({ data: [] });
 	const [authenticated, setAuthenticated] = useState<boolean>(false);
 	const [state, setState] = useState<SocketStates>('idle');
 	const ws = useRef<WebSocket | null>(null);
@@ -136,8 +152,12 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 		state,
 		authenticated,
 		data,
+
 		replyingTo,
 		replyTo,
+		viewingImages,
+		viewImages,
+
 		send,
 		on,
 		off,
@@ -148,6 +168,19 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 			return ws.current;
 		}
 	};
+
+	useEffect(() => {
+		if (!replyButtonRef.current || !replyingTo) return;
+
+		function onKeyDown(event: KeyboardEvent) {
+			if (!replyingTo || event.key !== 'Enter') return;
+
+			replyButtonRef.current?.click();
+		}
+
+		document.addEventListener('keydown', onKeyDown);
+		return () => document.removeEventListener('keydown', onKeyDown);
+	}, [replyingTo, replyButtonRef.current]);
 
 	useEffect(() => {
 		function onUnload() {
@@ -204,7 +237,7 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 
 						case DispatchType.DATA_UPDATE: {
 							const { data } = payload;
-							setData({ data });
+							setData(data);
 						} break;
 
 						default: {
@@ -230,16 +263,18 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 		<Dialog
 			open={!!replyingTo}
 			onOpenChange={(open) => {
+				console.log(open);
 				if (!open) {
 					setReplyLoading(false);
 					setReplyFailed(false);
+					setReplyContent('');
 					replyTo(null);
 				}
 			}}
 		>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Replying to {replyingTo?.author}</DialogTitle>
+					<DialogTitle>Replying to {replyingTo?.author.name}</DialogTitle>
 				</DialogHeader>
 				<Input
 					placeholder='Hey! How are you?'
@@ -257,6 +292,7 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 						type='submit'
 						className='w-full disabled:opacity-50'
 						size='sm'
+						ref={replyButtonRef}
 						disabled={replyLoading || !replyContent}
 						onClick={async () => {
 							if (!replyingTo) return;
@@ -285,12 +321,53 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 							setReplyFailed(!success);
 							setReplyLoading(false);
 
-							if (success) replyTo(null);
+							if (success) {
+								setReplyContent('');
+								replyTo(null);
+							}
 						}}
 					>
 						{replyLoading ? <LoaderCircle className='animate-spin' /> : 'Send'}
 					</Button>
 				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+		<Dialog open={!!viewingImages?.length} onOpenChange={(open) => !open && viewImages([])}>
+			<DialogContent hideButton={true} className='!outline-none w-screen max-h-screen p-0 border-0 !bg-transparent'>
+				<div className='flex flex-col items-center gap-16 w-full'>
+					<Carousel
+						opts={{ align: 'center' }}
+						plugins={[WheelGesturesPlugin()]}
+						className='!outline-none w-full'
+					>
+						{createElement(() => {
+							const { api } = useCarousel();
+
+							return <>
+								<div className='flex flex-col w-full'>
+									<CarouselContent className='w-full'>
+										{viewingImages.map(attachment => <CarouselItem>
+											<BackendMedia
+												className='w-full h-full object-contain'
+												hash={attachment.identifier}
+												name={attachment.name}
+												ext={attachment.ext}
+												type={attachment.type}
+											/>
+										</CarouselItem>)}
+									</CarouselContent>
+								</div>
+								{(api?.canScrollNext() || api?.canScrollPrev()) && <div className='flex justify-center mt-6 w-full'>
+									{/* <CarouselDots /> */}
+									<div className='flex justify-between items-center gap-2 w-full'>
+										<CarouselPrevious />
+										<CarouselNext />
+									</div>
+								</div>}
+							</>;
+						})}
+					</Carousel>
+				</div>
 			</DialogContent>
 		</Dialog>
 		{children}

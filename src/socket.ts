@@ -2,8 +2,8 @@ import { createLogger } from '~/structures/logger';
 import { DispatchType } from '@shared/constants';
 import { WebSocket, WebSocketServer } from 'ws';
 import config from '@web-config.json';
-import * as Events from '~/events';
 import storage from '~/storage';
+import handlers from '~/events';
 
 
 const server = new WebSocketServer({ port: config.port });
@@ -29,7 +29,7 @@ server.on('connection', (ws: WebSocket) => {
 			const payload = JSON.parse(data.toString());
 			if (!payload.type) return;
 
-			const handler = Events[payload.type as keyof typeof Events];
+			const handler = handlers[payload.type];
 			if (!handler) return;
 
 			handler(ws, payload);

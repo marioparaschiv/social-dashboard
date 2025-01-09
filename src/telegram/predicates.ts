@@ -1,4 +1,5 @@
 import type { TelegramListener } from '@types';
+import { getDefaults } from '~/config';
 import type { Api } from 'telegram';
 
 
@@ -9,11 +10,13 @@ export function globalPredicate(
 	reply: Api.Message,
 	replyAuthor: Api.User
 ) {
+	const defaults = getDefaults();
+
 	if (listener.chatId && chatId !== listener.chatId) {
 		return false;
 	}
 
-	if (!listener.allowBots && author.className === 'User' && author.bot) {
+	if (!(listener.allowBots ?? defaults.allowBots) && author.className === 'User' && author.bot) {
 		return false;
 	}
 
@@ -27,7 +30,7 @@ export function globalPredicate(
 		return false;
 	}
 
-	if (listener.blacklistedUsers?.length && usernames.some(u => listener.blacklistedUsers.includes(u))) {
+	if ((listener.blacklistedUsers ?? defaults.blacklistedUsers)?.length && usernames.some(u => listener.blacklistedUsers.includes(u))) {
 		return false;
 	}
 
@@ -89,10 +92,11 @@ export function dmPredicate(
 	reply: Api.Message,
 	replyAuthor: Api.User
 ) {
+	const defaults = getDefaults();
 	const userId = ((user as Api.User).id ?? (user as Api.PeerUser).userId).toString();
 
 	if (!globalPredicate(listener, userId, author, reply, replyAuthor)) return false;
-	if (!(listener.allowDMs ?? true)) return false;
+	if (!(listener.allowDMs ?? defaults.allowDMs)) return false;
 
 	return true;
 }

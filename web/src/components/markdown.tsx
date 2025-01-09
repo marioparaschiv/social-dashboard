@@ -17,6 +17,7 @@ function Markdown({ children, ...props }: ComponentProps<typeof ReactMarkdown>) 
 		const rendered = segments.map((segment, index) => {
 			// Check if it's a Discord mention format
 			const discordMentionMatch = segment.match(/<((?::\w+:|@!*&*|#))([0-9]+)>/);
+
 			if (discordMentionMatch) {
 				const symbol = discordMentionMatch[1];
 				const mention = discordMentionMatch[2];
@@ -47,10 +48,12 @@ function Markdown({ children, ...props }: ComponentProps<typeof ReactMarkdown>) 
 			const highlightedSegment = Object.entries(config.highlightedKeywords).reduce((acc, [regex, color]) => {
 				const regexPattern = new RegExp(regex, 'gi');
 				const matches = segment.match(regexPattern);
+
 				if (matches) {
 					highlighted = true;
 					return acc.replace(regexPattern, (match) => `<span class='font-bold' style="color: ${color};">${match}</span>`);
 				}
+
 				return acc;
 			}, segment);
 

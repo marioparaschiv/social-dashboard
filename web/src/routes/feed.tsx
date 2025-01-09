@@ -5,11 +5,11 @@ import { DispatchType } from '@shared/constants';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import useBackend from '~/hooks/use-backend';
+import useSearch from '~/hooks/use-search';
 import { useMemo, useState } from 'react';
 import Panel from '~/components/panel';
 import config from '@web-config.json';
 import Page from '~/components/page';
-import { splitBy } from '~/utils';
 
 
 export const path = '/';
@@ -20,9 +20,21 @@ function Feed() {
 	const [authFailed, setAuthFailed] = useState(false);
 	const [authOpen, setAuthOpen] = useState(false);
 	const [password, setPassword] = useState('');
+	const { search } = useSearch();
 	const backend = useBackend();
 
-	const data = useMemo(() => splitBy(backend.data, 'groups', (a, b) => a.savedAt - b.savedAt), [backend.data]);
+	const data = useMemo(() => Object.fromEntries(Object.entries(backend.data).map(([category, items]) => {
+		let messages = items.sort((a, b) => a.savedAt - b.savedAt);
+
+		if (search) {
+			messages = messages.filter(message =>
+				message.content?.toLowerCase().includes(search.toLowerCase()) ||
+				message.reply?.content?.toLowerCase().includes(search.toLowerCase())
+			);
+		}
+
+		return [category, messages];
+	})), [backend.data, search]);
 
 	const groups = useMemo(() => {
 		const keys = Object.keys(data);
@@ -121,6 +133,7 @@ function Feed() {
 				<Panel
 					data={data[group as keyof typeof data]}
 					group={group}
+					key={`group-${group}`}
 					index={index}
 				/>
 				{index !== groups.length - 1 && <ResizableHandle key={'handle-' + index} withHandle={true} />}

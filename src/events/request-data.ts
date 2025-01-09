@@ -7,7 +7,7 @@ import { send } from '~/socket';
 function handler(ws: WebSocket) {
 	if (!ws.authenticated) return;
 
-	send(ws, DispatchType.DATA_UPDATE, { data: [...storage.storage.values()] });
+	send(ws, DispatchType.DATA_UPDATE, { data: storage.storage });
 }
 
 export default handler;

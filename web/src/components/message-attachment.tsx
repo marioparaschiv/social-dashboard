@@ -1,4 +1,4 @@
-import BackendImage from '~/components/backend-image';
+import BackendMedia from '~/components/backend-media';
 import type { StoreItemAttachment } from '@types';
 import { DispatchType } from '@shared/constants';
 import { useCallback, useState } from 'react';
@@ -9,9 +9,10 @@ import { FileIcon, X } from 'lucide-react';
 
 interface MessageAttachmentProps extends React.ComponentProps<'div'> {
 	attachment: StoreItemAttachment;
+	onClick?: (e: React.MouseEvent<HTMLElement>) => void;
 }
 
-function MessageAttachment({ attachment, className, ...props }: MessageAttachmentProps) {
+function MessageAttachment({ attachment, className, onClick, ...props }: MessageAttachmentProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const backend = useBackend();
@@ -32,25 +33,22 @@ function MessageAttachment({ attachment, className, ...props }: MessageAttachmen
 				remove();
 			}
 		});
-	}, []);
+	}, [attachment]);
 
 	if (error) {
-
+		return <div className='flex flex-col bg-foreground/10 px-6 py-4 text-center m-auto items-center justify-center rounded-md'>
+			<X />
+			Failed to load.
+		</div>;
 	}
 
-	if (attachment.type.startsWith('image/')) {
-		if (error) {
-			return <div className='flex flex-col bg-foreground/10 px-6 py-4 text-center m-auto items-center justify-center rounded-md'>
-				<X />
-				Failed to load.
-			</div>;
-		}
-
-		return <BackendImage
-			className='rounded-md'
-			role='button'
+	if (attachment.type.startsWith('image/') || attachment.type.startsWith('video/')) {
+		return <BackendMedia
+			onClick={onClick}
+			className={cn('rounded-md', attachment.type.startsWith('video/') && 'max-w-full max-h-[400px]')}
 			hash={attachment.identifier}
 			name={attachment.name}
+			ext={attachment.ext}
 			type={attachment.type}
 		/>;
 	}

@@ -20,10 +20,11 @@ export async function wipeCache() {
 	saved = [];
 }
 
-export function cacheItem(hash: string, buffer: ArrayBuffer) {
+export function cacheItem(hash: string, ext: string | false, buffer: ArrayBuffer) {
 	if (saved.includes(hash)) return;
 
-	const path = join(FILE_CACHE_PATH, hash);
+	const path = join(FILE_CACHE_PATH, ext ? `${hash}.${ext}` : hash);
+	console.log(path);
 	writeFileSync(path, new Uint8Array(buffer));
 	saved.push(hash);
 }

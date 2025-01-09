@@ -26,10 +26,23 @@ export interface AuthResponse {
 
 export interface RequestImage {
 	hash: string;
+	ext: string;
 }
 
 export interface ImageResponse {
 	hash: string;
+	ext: string;
+	data: string;
+}
+
+export interface RequestVideo {
+	hash: string;
+	ext: string;
+}
+
+export interface VideoResponse {
+	hash: string;
+	ext: string;
 	data: string;
 }
 
@@ -79,9 +92,19 @@ export interface TelegramListener {
 	subchannels?: string[];
 }
 
+export type Defaults = Partial<Omit<
+	DiscordListener | TelegramListener,
+	'name' |
+	'group' |
+	'chatId' |
+	'users' |
+	'replyingTo'
+>>;
+
 export interface StoreItemAttachment {
 	name: string;
 	identifier: string;
+	ext: string;
 	type: string;
 }
 
@@ -107,24 +130,20 @@ export interface StoreItem<T extends string = StoreItemTypes, K = StoreItemParam
 	savedAt: number;
 	type: T;
 	groups: string[];
-	author: string;
-	// author: {
-	// 	name: string;
-	// 	avatar: string;
-	// };
-	// origin: {
-	// 	entity:  T extends 'telegram' ? Awaited<ReturnType<typeof getTelegramEntityDetails>> : T extends 'discord' ? Awaited<ReturnType<typeof getDiscordEntityDetails>> : never;
-	// 	avatar: string;
-	// };
+	author: {
+		name: string;
+		avatar: string;
+	};
+	origin: {
+		entity: T extends 'telegram' ? Awaited<ReturnType<typeof getTelegramEntityDetails>> : T extends 'discord' ? Awaited<ReturnType<typeof getDiscordEntityDetails>> : never;
+		avatar: string;
+	};
 	reply: {
 		author: string;
 		content: string;
 		attachmentCount: number;
 	} | null;
 	listeners: string[];
-	origin: T extends 'telegram' ? Awaited<ReturnType<typeof getTelegramEntityDetails>> : T extends 'discord' ? Awaited<ReturnType<typeof getDiscordEntityDetails>> : never;
-	originAvatar: string;
-	authorAvatar: string;
 	content: string;
 	attachments: StoreItemAttachment[];
 	parameters: K;

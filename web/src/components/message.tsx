@@ -1,6 +1,6 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip';
 import MessageAttachment from '~/components/message-attachment';
-import BackendImage from '~/components/backend-image';
+import BackendMedia from '~/components/backend-media';
 import Timestamp from '~/components/timestamp';
 import type { StoreItem, User } from '@types';
 import useBackend from '~/hooks/use-backend';
@@ -27,6 +27,7 @@ function Message({ message, ...props }: MessageProps) {
 
 	return <li
 		data-is-replying={backend.replyingTo === message}
+		onDoubleClick={() => backend.replyTo(message)}
 		className='relative flex gap-2 items-center group hover:bg-foreground/10 rounded-md data-[is-replying=true]:bg-amber-600/20'
 		{...props}
 	>
@@ -39,39 +40,41 @@ function Message({ message, ...props }: MessageProps) {
 			</button>
 		</div>
 		<div className='flex-shrink-0 m-2 self-start'>
-			{message.authorAvatar === 'none' ? <div className='w-11 h-11 rounded-full bg-foreground/20 flex items-center justify-center'>
+			{message.author.avatar === 'none' ? <div className='w-11 h-11 rounded-full bg-foreground/20 flex items-center justify-center'>
 				{(message.type === 'telegram' ?
-					formatTelegramOrigin(message.origin).at(0)?.toUpperCase() :
-					formatDiscordOrigin(message.origin).at(0)?.toUpperCase()) ?? '?'}
-			</div> : <BackendImage
+					formatTelegramOrigin(message.origin.entity).at(0)?.toUpperCase() :
+					formatDiscordOrigin(message.origin.entity).at(0)?.toUpperCase()) ?? '?'}
+			</div> : <BackendMedia
 				className='w-11 h-11 rounded-full'
-				hash={message.authorAvatar}
+				hash={message.author.avatar}
+				ext='png'
 				name='avatar.png'
 			/>}
 		</div>
-		<div className='flex flex-col overflow-hidden'>
+		<div className='flex flex-col overflow-hidden w-full mr-2'>
 			<div className='flex gap-2 items-center'>
 				<h1 className='font-bold text-base' style={{ color: authorColor }}>
-					{message.author}
+					{message.author.name}
 				</h1>
 				<Timestamp className='text-xs text-foreground/60' timestamp={message.savedAt} />
 				<TooltipProvider delayDuration={100}>
 					<Tooltip>
 						<TooltipTrigger className='flex gap-1 items-center flex-shrink-0'>
-							{message.originAvatar === 'none' ? <div className='w-6 h-6 rounded-full bg-foreground/20 flex items-center justify-center'>
+							{message.origin.avatar === 'none' ? <div className='w-6 h-6 rounded-full bg-foreground/20 flex items-center justify-center'>
 								{(message.type === 'telegram' ?
 									formatTelegramOrigin(message.origin).at(0)?.toUpperCase() :
 									formatDiscordOrigin(message.origin).at(0)?.toUpperCase()) ?? '?'}
-							</div> : <BackendImage
+							</div> : <BackendMedia
 								className='w-6 h-6 rounded-full'
-								hash={message.originAvatar}
+								hash={message.origin.avatar}
+								ext='png'
 								name='avatar.png'
 							/>}
 							<span className='text-xs text-foreground/60'><b>{message.listeners.join(', ')}</b></span>
 						</TooltipTrigger>
 						<TooltipContent className='flex flex-col gap-2'>
 							<span className='text-sm'>Matched: <b>{message.listeners.join(', ')}</b></span>
-							<span className='text-sm'>Origin: <b>{message.type === 'telegram' ? formatTelegramOrigin(message.origin) : formatDiscordOrigin(message.origin)}</b></span>
+							<span className='text-sm'>Origin: <b>{message.type === 'telegram' ? formatTelegramOrigin(message.origin.entity) : formatDiscordOrigin(message.origin.entity)}</b></span>
 							<span className='text-sm'>Source: <b className='capitalize'>{message.type}</b></span>
 						</TooltipContent>
 					</Tooltip>
@@ -84,17 +87,18 @@ function Message({ message, ...props }: MessageProps) {
 					{message.reply.attachmentCount} attachment(s)
 				</p>}
 			</div>}
-			<p className='prose'>
+			<span className='prose'>
 				<Markdown>{message.content}</Markdown>
-			</p>
+			</span>
 			{/* Images */}
-			{imageAttachments.length !== 0 && <div className={cn('mt-1 w-full grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2 items-stretch', message.content && 'mt-2')}>
+			{imageAttachments.length !== 0 && <div className={cn('my-1 w-full grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 items-stretch', message.content && 'mt-2')}>
 				{imageAttachments.map((attachment, index) => <MessageAttachment
 					attachment={attachment}
+					onClick={() => backend.viewImages(message.attachments)}
 					key={`message-${message.savedAt}-attachment-${index}`}
 				/>)}
 			</div>}
-			{otherAttachments.length !== 0 && <div className={cn('mt-1 flex gap-2', imageAttachments.length && 'mt-2')}>
+			{otherAttachments.length !== 0 && <div className={cn('my-1 w-full grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 items-stretch', imageAttachments.length || message.content && 'mt-2')}>
 				{/* Attachments */}
 				{message.attachments.filter(r => !r.type.startsWith('image/')).map((attachment, index) => <MessageAttachment
 					attachment={attachment}
@@ -105,7 +109,7 @@ function Message({ message, ...props }: MessageProps) {
 	</li>;
 }
 
-function formatTelegramOrigin(entityDetails: StoreItem<'telegram'>['origin']): string {
+function formatTelegramOrigin(entityDetails: StoreItem<'telegram'>['origin']['entity']): string {
 	if (!entityDetails) return '';
 
 	// Handle forum cases
@@ -126,7 +130,7 @@ function formatTelegramOrigin(entityDetails: StoreItem<'telegram'>['origin']): s
 	return entityDetails.title ?? '?';
 }
 
-function formatDiscordOrigin(details: StoreItem<'discord'>['origin']) {
+function formatDiscordOrigin(details: StoreItem<'discord'>['origin']['entity']) {
 	if (!details) return 'Unknown';
 
 	switch (details.type) {
@@ -145,7 +149,7 @@ function formatDiscordOrigin(details: StoreItem<'discord'>['origin']) {
 		}
 
 		case 'guild': {
-			return `${details.name} > ${details.channelName}`;
+			return `${details.name} → ${details.channelName}`;
 		}
 
 		default: {

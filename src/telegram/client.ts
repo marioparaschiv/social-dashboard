@@ -9,13 +9,13 @@ import { Logger } from 'telegram/extensions/Logger';
 import { createLogger } from '~/structures/logger';
 import { stripPhoneNumber } from '~/utils/strip';
 import { getTelegramListeners } from '~/config';
+import { getDisplayName } from 'telegram/utils';
 import { input } from '@inquirer/prompts';
 import { cacheItem } from '~/file-cache';
 import mimeTypes from 'mime-types';
-import Storage from '~/storage';
+import storage from '~/storage';
 import { hash } from '~/utils';
 import { Api } from 'telegram';
-import { getDisplayName } from 'telegram/utils';
 
 
 interface ClientOptions {
@@ -97,11 +97,11 @@ class Client extends TelegramClient {
 
 		const originPhoto = await this.downloadProfilePhoto(origin) as Buffer | null;
 		const originAvatar = originPhoto?.length ? hash(originPhoto.buffer as ArrayBuffer) : 'none';
-		if (originAvatar) cacheItem(originAvatar, originPhoto.buffer as ArrayBuffer);
+		if (originAvatar) cacheItem(originAvatar, 'png', originPhoto.buffer as ArrayBuffer);
 
 		const authorPhoto = await this.downloadProfilePhoto(author) as Buffer | null;
 		const authorAvatar = authorPhoto?.length ? hash(authorPhoto.buffer as ArrayBuffer) : 'none';
-		if (authorAvatar) cacheItem(authorAvatar, authorPhoto.buffer as ArrayBuffer);
+		if (authorAvatar) cacheItem(authorAvatar, 'png', authorPhoto.buffer as ArrayBuffer);
 
 		const originId = await this.getPeerId(origin);
 
@@ -109,24 +109,33 @@ class Client extends TelegramClient {
 
 		const files = await this.getFiles(event.message);
 		for (const file of files) {
-			cacheItem(file.hash, file.buffer);
+			const ext = mimeTypes.extension(file.mimeType ?? 'application/octet-stream') || '';
+
+			cacheItem(file.hash, ext, file.buffer);
 
 			attachments.push({
 				name: file.name,
 				type: file.mimeType,
-				identifier: file.hash
+				identifier: file.hash,
+				ext
 			});
 		}
 
+		const groups = [...new Set(matchedListeners.map(l => l.group))];
+
 		const item: StoreItem<'telegram'> = {
 			type: 'telegram',
-			author: getDisplayName(author) ?? 'Unknown',
-			authorAvatar,
-			origin: await getTelegramEntityDetails(origin, reply),
-			originAvatar,
+			author: {
+				name: getDisplayName(author) ?? 'Unknown',
+				avatar: authorAvatar
+			},
+			origin: {
+				avatar: originAvatar,
+				entity: await getTelegramEntityDetails(origin, reply)
+			},
 			attachments,
 			listeners: [...new Set(matchedListeners.map(l => l.name))],
-			groups: [...new Set(matchedListeners.map(l => l.group))],
+			groups,
 			content: this.getContent(event.message),
 			reply: reply ? {
 				author: getDisplayName(replyAuthor),
@@ -141,10 +150,10 @@ class Client extends TelegramClient {
 			savedAt: Date.now(),
 		};
 
-		Storage.add(item);
+		for (const group of groups) {
+			storage.add(group, item);
+		}
 	}
-
-
 
 	getContent(message: Api.Message) {
 		let content = message.rawText;
