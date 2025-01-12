@@ -1,4 +1,4 @@
-import type { Guild, Message } from '@types';
+import type { Guild, Message } from '@shared/types';
 import { Api } from 'telegram';
 
 

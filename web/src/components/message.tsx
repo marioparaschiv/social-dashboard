@@ -1,8 +1,8 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip';
 import MessageAttachment from '~/components/message-attachment';
 import BackendMedia from '~/components/backend-media';
+import type { StoreItem, User } from '@shared/types';
 import Timestamp from '~/components/timestamp';
-import type { StoreItem, User } from '@types';
 import useBackend from '~/hooks/use-backend';
 import Markdown from '~/components/markdown';
 import config from '@web-config.json';

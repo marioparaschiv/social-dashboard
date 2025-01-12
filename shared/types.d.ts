@@ -1,15 +1,17 @@
 import type { getDiscordEntityDetails, getTelegramEntityDetails } from '~/utils/get-entity-details';
 import type { DispatchType } from '@shared/constants';
+import type { JSX } from 'react';
 
 
 declare module 'ws' {
 	interface WebSocket {
 		authenticated: boolean;
+		chats: FetchedChats;
 	}
 }
 
 
-export interface AuthRequest {
+export interface RequestAuth {
 	password: string;
 }
 
@@ -49,6 +51,71 @@ export interface VideoResponse {
 export interface Dispatch {
 	type: DispatchType;
 	[key: PropertyKey]: any;
+}
+
+export interface DispatchPayload {
+	[DispatchType.WELCOME]: void;
+
+	[DispatchType.REQUEST_AUTH]: RequestAuth,
+	[DispatchType.AUTH_RESPONSE]: AuthResponse,
+
+
+	[DispatchType.REQUEST_VIDEO]: RequestVideo;
+	[DispatchType.VIDEO_RESPONSE]: VideoResponse;
+
+	[DispatchType.REQUEST_IMAGE]: RequestImage;
+	[DispatchType.IMAGE_RESPONSE]: ImageResponse;
+
+	[DispatchType.REQUEST_DATA]: void,
+	[DispatchType.DATA_UPDATE]: DataUpdate,
+
+	[DispatchType.REQUEST_REPLY]: RequestReply;
+	[DispatchType.REPLY_RESPONSE]: ReplyResponse;
+
+	[DispatchType.ADD_CHATS_REQUEST]: AddChatsRequest;
+	[DispatchType.ADD_CHATS_RESPONSE]: AddChatsResponse;
+
+	[DispatchType.FETCH_CHATS]: void;
+	[DispatchType.FETCH_CHATS_RESPONSE]: FetchedChats;
+}
+
+export type DialogVariants = 'confirm' | 'default';
+
+export interface DialogOptions {
+	title: JSX.Element | string;
+	description?: JSX.Element | string;
+	content: JSX.Element | string;
+	footer?: JSX.Element | string;
+	variant?: DialogVariants;
+	uuid?: string;
+}
+
+export type InternalDialogOptions = DialogOptions & { closing: boolean; uuid: string; };
+
+export interface FetchedChats {
+	discord: SelectableChannel[];
+	telegram: SelectableChannel[];
+}
+
+export interface SelectableChannel {
+	name: string;
+	icon: string;
+	id: string;
+}
+
+export type AddChatsRequest = { uuid: string; } & FetchedChats;
+
+export interface AddChatsResponse {
+	uuid: string;
+}
+
+export interface DataUpdate {
+	data: Record<PropertyKey, StoreItem<StoreItemTypes>[]>;
+}
+
+export interface ReplyResponse {
+	uuid: string;
+	success: boolean;
 }
 
 export interface SendMessageOptions {

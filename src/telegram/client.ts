@@ -1,6 +1,6 @@
+import type { StoreItem, StoreItemAttachment, TelegramListener } from '@shared/types';
 import { channelPredicate, chatPredicate, dmPredicate } from '~/telegram/predicates';
 import type { TelegramClientParams } from 'telegram/client/telegramBaseClient';
-import type { StoreItem, StoreItemAttachment, TelegramListener } from '@types';
 import { getTelegramEntityDetails } from '~/utils/get-entity-details';
 import { NewMessage, type NewMessageEvent } from 'telegram/events';
 import { TelegramClient } from 'telegram/client/TelegramClient';

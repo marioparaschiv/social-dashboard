@@ -23,8 +23,10 @@ export async function wipeCache() {
 export function cacheItem(hash: string, ext: string | false, buffer: ArrayBuffer) {
 	if (saved.includes(hash)) return;
 
-	const path = join(FILE_CACHE_PATH, ext ? `${hash}.${ext}` : hash);
-	console.log(path);
+	const filename = ext ? `${hash}.${ext}` : hash;
+	const path = join(FILE_CACHE_PATH, filename);
 	writeFileSync(path, new Uint8Array(buffer));
 	saved.push(hash);
+
+	return filename;
 }

@@ -1,3 +1,4 @@
+import type { DispatchPayload } from '@shared/types';
 import { createLogger } from '~/structures/logger';
 import { DispatchType } from '@shared/constants';
 import { WebSocket, WebSocketServer } from 'ws';
@@ -15,6 +16,7 @@ server.on('connection', (ws: WebSocket) => {
 	logger.debug(`A new client has connected.`);
 
 	ws.authenticated = false;
+	ws.chats = { telegram: [], discord: [] };
 
 	const onUpdate = onDataUpdate.bind(null, ws);
 	storage.on('updated', onUpdate);
@@ -29,6 +31,7 @@ server.on('connection', (ws: WebSocket) => {
 			const payload = JSON.parse(data.toString());
 			if (!payload.type) return;
 
+			console.log(payload);
 			const handler = handlers[payload.type];
 			if (!handler) return;
 
@@ -48,7 +51,7 @@ function onDataUpdate(ws: WebSocket) {
 	send(ws, DispatchType.DATA_UPDATE, { data: storage.storage });
 }
 
-export function send(ws: WebSocket, type: DispatchType, payload: Record<PropertyKey, any> = {}) {
+export function send<T extends DispatchType>(ws: WebSocket, type: T, payload?: DispatchPayload[T]) {
 	try {
 		const stringified = JSON.stringify({ ...payload, type });
 		ws.send(stringified);

@@ -1,4 +1,4 @@
-import type { TelegramListener } from '@types';
+import type { TelegramListener } from '@shared/types';
 import { getDefaults } from '~/config';
 import type { Api } from 'telegram';
 

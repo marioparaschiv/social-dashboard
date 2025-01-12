@@ -1,6 +1,6 @@
 import { OPCodes, ConnectionState, HELLO_TIMEOUT, HEARTBEAT_MAX_RESUME_THRESHOLD, MAX_CONNECTION_RETRIES } from '~/discord/constants';
+import type { Guild, Message, StoreItem, StoreItemAttachment, User } from '@shared/types';
 import { getDefaults, getDiscordListeners, getDiscordReplacements } from '~/config';
-import type { Guild, Message, StoreItem, StoreItemAttachment, User } from '@types';
 import { getDiscordEntityDetails } from '~/utils/get-entity-details';
 import { createLogger } from '~/structures/logger';
 import { stripToken } from '~/utils/strip';
@@ -138,6 +138,7 @@ class Client {
 					this.guilds.set(guild.id, guild);
 
 					for (const channel of guild.channels ?? []) {
+						channel.guild_id ??= guild.id;
 						this.channels.set(channel.id, channel);
 					}
 				};
@@ -168,8 +169,7 @@ class Client {
 				this.guilds.set(guild.id, guild);
 			} break;
 
-			case 'MESSAGE_CREATE':
-			case 'MESSAGE_UPDATE': {
+			case 'MESSAGE_CREATE': {
 				const msg = payload.d as Message;
 
 				if (!msg.content && !msg.embeds?.length && !msg.attachments?.length) return;
@@ -252,7 +252,6 @@ class Client {
 
 					cacheItem(uuid, ext, buffer);
 
-
 					attachments.push({
 						name: attachment.filename,
 						type: attachment.content_type,
@@ -292,6 +291,8 @@ class Client {
 				};
 
 				for (const group of groups) {
+					if (storage.storage[group]?.includes(item)) continue;
+
 					storage.add(group, item);
 				}
 			} break;

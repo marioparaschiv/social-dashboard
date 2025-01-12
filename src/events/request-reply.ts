@@ -1,8 +1,8 @@
 import { clients as telegramClients } from '~/telegram';
 import { clients as discordClients } from '~/discord';
+import type { RequestReply } from '@shared/types';
 import { DispatchType } from '@shared/constants';
 import { sendMessage } from '~/discord/api';
-import type { RequestReply } from '@types';
 import { sleep } from '@shared/utils';
 import type { WebSocket } from 'ws';
 import { send } from '~/socket';

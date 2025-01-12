@@ -1,11 +1,11 @@
-import type { AuthRequest, AuthResponse } from '@types';
+import type { RequestAuth, AuthResponse } from '@shared/types';
 import { DispatchType } from '@shared/constants';
 import type { WebSocket } from 'ws';
 import config from '@config.json';
 import { send } from '~/socket';
 
 
-function handler(ws: WebSocket, payload: AuthRequest) {
+function handler(ws: WebSocket, payload: RequestAuth) {
 	const success = config.password === payload.password;
 
 	if (success) ws.authenticated = true;

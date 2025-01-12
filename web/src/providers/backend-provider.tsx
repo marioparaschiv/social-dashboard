@@ -1,7 +1,7 @@
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '~/components/ui/carousel';
 import { createContext, createElement, useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
-import { Dispatch, type RequestReply, type StoreItem } from '@types';
+import { Dispatch, type DispatchPayload, type RequestReply, type StoreItem } from '@shared/types';
 import { WheelGesturesPlugin } from 'embla-carousel-wheel-gestures';
 import { useCarousel } from '~/components/ui/carousel';
 import BackendMedia from '~/components/backend-media';
@@ -130,11 +130,12 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 		});
 	}, []);
 
-	const send = useCallback((type: DispatchType, payload: Record<PropertyKey, any> = {}) => {
+	const send = useCallback(<T extends DispatchType>(type: T, payload?: DispatchPayload[T]) => {
 		if (!ws.current) return console.warn('Attempted to send data to the WebSocket in CLOSED state.');
 
 		try {
-			const stringified = JSON.stringify({ ...payload, type });
+			const stringified = JSON.stringify({ ...payload ?? {}, type });
+			console.log(stringified);
 			ws.current!.send(stringified);
 		} catch (error) {
 			console.error('Failed to send WebSocket message to client:', error);
@@ -232,7 +233,12 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 							if (!payload.success) return;
 
 							setAuthenticated(true);
-							send(DispatchType.REQUEST_DATA);
+
+							const storedChats = sessionStorage.getItem('chats');
+							const chats = storedChats ? JSON.parse(storedChats) : { discord: [], telegram: [] };
+
+							send(DispatchType.ADD_CHATS_REQUEST, chats);
+							// send(DispatchType.REQUEST_DATA);
 						} break;
 
 						case DispatchType.DATA_UPDATE: {

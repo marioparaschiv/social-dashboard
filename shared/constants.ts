@@ -9,5 +9,11 @@ export enum DispatchType {
 	REQUEST_AUTH = 'request-auth',
 	REQUEST_IMAGE = 'request-image',
 	REQUEST_VIDEO = 'request-video',
-	REQUEST_REPLY = 'request-reply'
+	REQUEST_REPLY = 'request-reply',
+
+	ADD_CHATS_REQUEST = 'add-chats',
+	ADD_CHATS_RESPONSE = 'add-chats-response',
+
+	FETCH_CHATS = 'fetch-chats',
+	FETCH_CHATS_RESPONSE = 'fetch-chats-response'
 }

@@ -55,6 +55,24 @@ function Feed() {
 	}, [backend.data]);
 
 	return <Page className='flex flex-col max-h-dvh h-dvh' containerClassName='overflow-hidden'>
+		{/* <Button onClick={() => {
+			// Create Discord URL (using new Discord URL format)
+			const discordUrl = `discord://discord.com/channels/@me/1303511148078829588`;
+
+			try {
+				// Try to open Discord app
+				const newWindow = window.open(discordUrl, '_blank', 'noopener,noreferrer');
+
+				// If app doesn't open, try web version
+				if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+					window.open(`https://discord.com/channels/@me/1303511148078829588`, '_blank', 'noopener,noreferrer');
+				}
+			} catch (error) {
+				console.error(error);
+			}
+		}}>
+			Hi
+		</Button> */}
 		{(backend.state !== 'ready' || !backend.authenticated) && <div className='font-bold h-full w-full flex items-center flex-1 justify-center text-center'>
 			{backend.state !== 'ready' && <div className='flex items-center gap-2'>
 				{backend.state === 'idle' && <Moon size={16} />}

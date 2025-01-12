@@ -1,5 +1,5 @@
+import type { StoreItemAttachment } from '@shared/types';
 import BackendMedia from '~/components/backend-media';
-import type { StoreItemAttachment } from '@types';
 import { DispatchType } from '@shared/constants';
 import { useCallback, useState } from 'react';
 import { cn, downloadDataURL } from '~/utils';

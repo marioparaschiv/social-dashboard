@@ -1,6 +1,6 @@
 import { forwardRef, memo, useCallback, useRef, type ComponentRef } from 'react';
+import type { StoreItem, StoreItemTypes } from '@shared/types';
 import { ResizablePanel } from '~/components/ui/resizable';
-import type { StoreItem, StoreItemTypes } from '@types';
 import { Separator } from '~/components/ui/separator';
 import Message from '~/components/message';
 import { Virtuoso } from 'react-virtuoso';

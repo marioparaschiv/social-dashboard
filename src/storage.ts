@@ -1,4 +1,4 @@
-import type { StoreItem } from '@types';
+import type { StoreItem } from '@shared/types';
 import Store from '~/structures/store';
 
 

@@ -1,5 +1,5 @@
+import type { GetMessageOptions, Message, SendMessageOptions } from '@shared/types';
 import { BUILD_NUMBER_LENGTH, BUILD_NUMBER_STRING } from '~/discord/constants';
-import type { GetMessageOptions, Message, SendMessageOptions } from '@types';
 import { createLogger } from '~/structures/logger';
 import sleep from '@shared/utils/sleep';
 import config from '@config.json';
