@@ -37,10 +37,10 @@ function Feed() {
 	})), [backend.data, search]);
 
 	const groups = useMemo(() => {
-		const keys = Object.keys(data);
+		const keys = Object.keys(backend.data);
 
 		return keys
-			.filter(d => data[d]?.length !== 0)
+			.filter(d => backend.data[d]?.length !== 0)
 			.sort((a, b) => {
 				// Handle items not in categoryOrder by putting them at the end
 				const indexA = config.categoryOrder.indexOf(a);
@@ -52,7 +52,7 @@ function Feed() {
 
 				return indexA - indexB;
 			});
-	}, [data]);
+	}, [backend.data]);
 
 	return <Page className='flex flex-col max-h-dvh h-dvh' containerClassName='overflow-hidden'>
 		{(backend.state !== 'ready' || !backend.authenticated) && <div className='font-bold h-full w-full flex items-center flex-1 justify-center text-center'>
