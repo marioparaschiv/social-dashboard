@@ -13,7 +13,13 @@ function openDialog(options: DialogOptions) {
 
 	state.addDialog(opts);
 
-	return () => state.closeDialog(opts);
+	return () => state.closeDialog(opts.uuid);
 }
 
-export default openDialog;
+function closeDialog(uuid: string) {
+	const state = useDialogStore.getState();
+
+	state.closeDialog(uuid);
+}
+
+export default { openDialog, closeDialog };

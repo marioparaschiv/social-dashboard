@@ -1,16 +1,19 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip';
 import MessageAttachment from '~/components/message-attachment';
+import EditNickname from '~/components/modals/edit-nickname';
+import type { StoreItem, DiscordUser } from '@shared/types';
+import { Link2, PencilLineIcon, Reply } from 'lucide-react';
 import BackendMedia from '~/components/backend-media';
 import { Separator } from '~/components/ui/separator';
-import type { StoreItem, User } from '@shared/types';
+import { useNickname } from '~/stores/nicknames';
 import Timestamp from '~/components/timestamp';
 import useBackend from '~/hooks/use-backend';
 import Markdown from '~/components/markdown';
-import { Link2, Reply } from 'lucide-react';
+import Embed from '~/components/embed';
 import config from '@web-config.json';
+import { cn, Dialogs } from '~/utils';
 import { useMemo } from 'react';
 import { toast } from 'sonner';
-import { cn } from '~/utils';
 
 
 interface MessageProps extends React.ComponentProps<'li'> {
@@ -26,6 +29,7 @@ function Message({ message, ...props }: MessageProps) {
 
 	const imageAttachments = useMemo(() => message.attachments.filter(a => a.type.startsWith('image/')), [message]);
 	const otherAttachments = useMemo(() => message.attachments.filter(a => !a.type.startsWith('image/')), [message]);
+	const nickname = useNickname(message.type, message.author.id);
 
 	return <li
 		data-is-replying={backend.replyingTo === message}
@@ -64,8 +68,6 @@ function Message({ message, ...props }: MessageProps) {
 								// Private chat or DM
 								return toast.error('Failed to open telegram link. Please keep in mind that the telegram URL scheme does not support DM chats.');
 							}
-
-							// url = `https://t.me/c/${msg.parameters.msg.parameters.originId}/${msg.parameters.messageId}`;
 						} break;
 					}
 
@@ -74,12 +76,6 @@ function Message({ message, ...props }: MessageProps) {
 					try {
 						// Try to open Discord app
 						window.open(url, '_blank', 'noopener,noreferrer');
-						// window.location.href = url;
-
-						// // If app doesn't open, try web version
-						// if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-						// 	window.open(`https://discord.com/users/${userId}`, '_blank', 'noopener,noreferrer');
-						// }
 					} catch (error) {
 						console.error('Failed top open external URL:', error);
 					}
@@ -101,14 +97,31 @@ function Message({ message, ...props }: MessageProps) {
 		</div>
 		<div className='flex flex-col overflow-hidden w-full mr-2'>
 			<div className='flex gap-2 items-center'>
-				<h1 className='font-bold text-base' style={{ color: authorColor }}>
-					{message.author.name}
+				<h1
+					className='font-bold text-base'
+					role='button'
+					style={{ color: authorColor }}
+					onClick={() => {
+						const uuid = `edit-name-${message.author.name}`;
+
+						Dialogs.openDialog({
+							uuid,
+							title: <span>Edit Nickname</span>,
+							content: <EditNickname
+								type={message.type}
+								authorId={message.author.id}
+								uuid={uuid}
+							/>,
+						});
+					}}
+				>
+					{nickname || message.author.name}
 				</h1>
 				<Timestamp className='text-xs text-foreground/60' timestamp={message.savedAt} />
 				<TooltipProvider delayDuration={100}>
 					<Tooltip>
 						<TooltipTrigger className='flex gap-1 items-center flex-shrink-0'>
-							{message.origin.avatar === 'none' ? <div className='w-6 h-6 rounded-full bg-foreground/20 flex items-center justify-center'>
+							{message.origin.avatar === 'none' ? <div className='w-6 h-6 rounded-full bg-foreground/10 flex items-center justify-center'>
 								{(message.type === 'telegram' ?
 									formatTelegramOrigin(message.origin).at(0)?.toUpperCase() :
 									formatDiscordOrigin(message.origin).at(0)?.toUpperCase()) ?? '?'}
@@ -120,12 +133,24 @@ function Message({ message, ...props }: MessageProps) {
 							<span className='text-xs text-foreground/60'><b>{message.listeners.join(', ')}</b></span>
 						</TooltipTrigger>
 						<TooltipContent className='flex flex-col gap-2'>
-							<span className='text-sm'>Matched: <b>{message.listeners.join(', ')}</b></span>
+							<span className='text-sm'>Matched: <b>{message.groups.join(', ')}</b></span>
 							<span className='text-sm'>Origin: <b>{message.type === 'telegram' ? formatTelegramOrigin(message.origin.entity) : formatDiscordOrigin(message.origin.entity)}</b></span>
 							<span className='text-sm'>Source: <b className='capitalize'>{message.type}</b></span>
 						</TooltipContent>
 					</Tooltip>
 				</TooltipProvider>
+				{message.edited && <TooltipProvider delayDuration={100}>
+					<Tooltip>
+						<TooltipTrigger className='flex gap-1 items-center flex-shrink-0'>
+							<div className='w-6 h-6 flex items-center justify-center text-center rounded-full bg-foreground/10'>
+								<PencilLineIcon className='rounded-md' size={14} />
+							</div>
+						</TooltipTrigger>
+						<TooltipContent className='flex flex-col gap-2'>
+							This message was edited.
+						</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>}
 			</div>
 			{message.reply && <div className='bg-foreground/15 py-1 px-2 rounded-lg text-sm my-1'>
 				<span className='font-bold'>{message.reply.author}</span>
@@ -134,9 +159,11 @@ function Message({ message, ...props }: MessageProps) {
 					{message.reply.attachmentCount} attachment(s)
 				</p>}
 			</div>}
-			<span className='prose'>
-				<Markdown>{message.content}</Markdown>
-			</span>
+			<div className='flex gap-2 items-center'>
+				<span className='prose'>
+					<Markdown>{message.content}</Markdown>
+				</span>
+			</div>
 			{/* Images */}
 			{imageAttachments.length !== 0 && <div className={cn('my-1 w-full grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 items-stretch', message.content && 'mt-2')}>
 				{imageAttachments.map((attachment, index) => <MessageAttachment
@@ -151,6 +178,9 @@ function Message({ message, ...props }: MessageProps) {
 					attachment={attachment}
 					key={`message-${message.savedAt}-attachment-${index}`}
 				/>)}
+			</div>}
+			{message.embeds && <div className='flex flex-col gap-2 my-2 w-full'>
+				{message.embeds.map(embed => <Embed embed={embed} />)}
 			</div>}
 		</div>
 	</li>;
@@ -188,7 +218,7 @@ function formatDiscordOrigin(details: StoreItem<'discord'>['origin']['entity']) 
 			}
 
 			// Otherwise join recipient usernames
-			return details.recipients ? details.recipients.map((r: User) => r.username)?.join(', ') + ' (Group)' : 'Unknown Group';
+			return details.recipients ? details.recipients.map((r: DiscordUser) => r.username)?.join(', ') + ' (Group)' : 'Unknown Group';
 		}
 
 		case 'dm': {

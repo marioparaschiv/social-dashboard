@@ -6,7 +6,7 @@ interface DialogStore {
 	dialogs: Record<string, InternalDialogOptions>,
 	addDialog: (options: InternalDialogOptions) => void,
 	removeDialog: (options: InternalDialogOptions) => void;
-	closeDialog: (options: InternalDialogOptions) => void;
+	closeDialog: (uuid: string) => void;
 };
 
 const useDialogStore = create<DialogStore>((set) => ({
@@ -20,8 +20,8 @@ const useDialogStore = create<DialogStore>((set) => ({
 
 		return { ...state };
 	}),
-	closeDialog: (options: InternalDialogOptions) => set(state => {
-		const dialog = state.dialogs[options.uuid];
+	closeDialog: (uuid: string) => set(state => {
+		const dialog = state.dialogs[uuid];
 		if (dialog) dialog.closing = true;
 
 

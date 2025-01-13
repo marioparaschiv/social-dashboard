@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import ThemeProvider from '~/providers/theme-provider.tsx';
 import BackendProvider from '~/providers/backend-provider';
 import SearchProvider from '~/providers/search-provider';
+import DialogProvider from '~/providers/dialog-provider';
 import { Toaster } from '~/components/ui/sonner';
 import { createRoot } from 'react-dom/client';
 import * as Pages from '~/routes';
@@ -18,8 +19,10 @@ createRoot(root).render(
 	<ThemeProvider>
 		<SearchProvider>
 			<BackendProvider>
-				<Toaster />
-				<RouterProvider router={router} />
+				<DialogProvider>
+					<Toaster />
+					<RouterProvider router={router} />
+				</DialogProvider>
 			</BackendProvider>
 		</SearchProvider>
 	</ThemeProvider>

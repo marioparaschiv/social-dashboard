@@ -4,6 +4,7 @@ import type { TelegramClientParams } from 'telegram/client/telegramBaseClient';
 import { getTelegramEntityDetails } from '~/utils/get-entity-details';
 import { NewMessage, type NewMessageEvent } from 'telegram/events';
 import { TelegramClient } from 'telegram/client/TelegramClient';
+import { EditedMessage } from 'telegram/events/EditedMessage';
 import { LogLevel } from 'telegram/extensions/Logger';
 import { Logger } from 'telegram/extensions/Logger';
 import { createLogger } from '~/structures/logger';
@@ -59,6 +60,7 @@ class Client extends TelegramClient {
 		});
 
 		this.addEventHandler(this.onMessage.bind(this), new NewMessage());
+		this.addEventHandler(this.onMessage.bind(this), new EditedMessage({}));
 	}
 
 	async onMessage(event: NewMessageEvent) {
@@ -124,16 +126,19 @@ class Client extends TelegramClient {
 
 		const item: StoreItem<'telegram'> = {
 			type: 'telegram',
+			edited: event.message.editDate && !event.message.editHide,
 			id: event.message.id.toString(),
 			author: {
 				name: getDisplayName(author) ?? 'Unknown',
-				avatar: authorAvatar && authorAvatar != 'none' ? authorAvatar + '.png' : 'none'
+				avatar: authorAvatar && authorAvatar != 'none' ? authorAvatar + '.png' : 'none',
+				id: author.id.toString()
 			},
 			origin: {
 				avatar: originAvatar && originAvatar != 'none' ? originAvatar + '.png' : 'none',
 				entity: await getTelegramEntityDetails(origin, reply)
 			},
 			attachments,
+			embeds: [],
 			listeners: [...new Set(matchedListeners.map(l => l.name))],
 			groups,
 			content: this.getContent(event.message),
@@ -151,7 +156,17 @@ class Client extends TelegramClient {
 		};
 
 		for (const group of groups) {
-			if (storage.storage[group]?.find(i => i.id === item.id)) {
+			const groupStorage = storage.storage[group];
+			const existing = groupStorage?.findIndex(i => i.id === item.id);
+
+			// Process edits
+			if (existing != void 0 && existing != -1) {
+				const previousItem = groupStorage[existing];
+
+				item.savedAt = previousItem.savedAt;
+
+				storage.storage[group][existing] = item;
+				storage.emit('updated');
 				continue;
 			}
 

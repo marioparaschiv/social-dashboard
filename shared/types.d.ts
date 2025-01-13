@@ -68,7 +68,7 @@ export interface Dispatch {
 export interface SendMessageOptions {
 	guild: string | null;
 	channel: string;
-	message: Partial<Message>;
+	message: Partial<DiscordMessage>;
 	token: string;
 	retriesRemaining?: number;
 }
@@ -144,9 +144,12 @@ export interface StoreItem<T extends string = StoreItemTypes, K = StoreItemParam
 	type: T;
 	groups: string[];
 	id: string;
+	embeds: Embed[];
+	edited: boolean;
 	author: {
 		name: string;
 		avatar: string;
+		id: string;
 	};
 	origin: {
 		entity: T extends 'telegram' ? Awaited<ReturnType<typeof getTelegramEntityDetails>> : T extends 'discord' ? Awaited<ReturnType<typeof getDiscordEntityDetails>> : never;
@@ -163,7 +166,7 @@ export interface StoreItem<T extends string = StoreItemTypes, K = StoreItemParam
 	parameters: K;
 }
 
-export interface User {
+export interface DiscordUser {
 	verified: boolean,
 	username: string,
 	purchased_flags: number,
@@ -190,7 +193,7 @@ export interface User {
 	bot: boolean;
 }
 
-export interface Guild {
+export interface DiscordGuild {
 	afk_channel_id: string | null,
 	public_updates_channel_id: string | null,
 	explicit_content_filter: number,
@@ -248,13 +251,13 @@ export interface Guild {
 	verification_level: number;
 }
 
-export interface Message {
+export interface DiscordMessage {
 	id: string,
 	type: number,
 	content: string,
 	channel_id: string,
 	guild_id?: string,
-	author: User,
+	author: DiscordUser,
 	message_reference: {
 		message_id: string;
 		channel_id: string;
@@ -270,5 +273,40 @@ export interface Message {
 	edited_timestamp: string | null,
 	flags: number,
 	components: any[];
+}
+
+export interface Embed {
+	title?: string; // Title of the embed
+	description?: string; // Description text of the embed
+	url?: string; // URL of the embed
+	timestamp?: string; // ISO8601 timestamp for the embed
+	color?: number; // Color code of the embed in decimal
+	footer?: {
+		text: string; // Footer text
+		icon_url?: string; // URL of the footer icon (only supports http(s))
+	};
+	image?: {
+		url: string; // URL of the image (only supports http(s))
+	};
+	thumbnail?: {
+		url: string; // URL of the thumbnail (only supports http(s))
+	};
+	video?: {
+		url: string; // URL of the video (only supports http(s))
+	};
+	provider?: {
+		name?: string; // Name of the provider
+		url?: string; // URL of the provider
+	};
+	author?: {
+		name: string; // Name of the author
+		url?: string; // URL of the author (optional)
+		icon_url?: string; // URL of the author's icon (only supports http(s))
+	};
+	fields?: Array<{
+		name: string; // Name of the field
+		value: string; // Value of the field
+		inline?: boolean; // Whether the field should display inline
+	}>;
 }
 

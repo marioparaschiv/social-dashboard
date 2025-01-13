@@ -1,5 +1,5 @@
 import { OPCodes, ConnectionState, HELLO_TIMEOUT, HEARTBEAT_MAX_RESUME_THRESHOLD, MAX_CONNECTION_RETRIES } from '~/discord/constants';
-import type { Guild, Message, StoreItem, StoreItemAttachment, User } from '@shared/types';
+import type { DiscordGuild, DiscordMessage, StoreItem, StoreItemAttachment, DiscordUser } from '@shared/types';
 import { getDefaults, getDiscordListeners, getDiscordReplacements } from '~/config';
 import { getDiscordEntityDetails } from '~/utils/get-entity-details';
 import { createLogger } from '~/structures/logger';
@@ -17,10 +17,10 @@ import WebSocket from 'ws';
 class Client {
 	logger = createLogger('Discord', 'Boot');
 	channels: Map<string, any> = new Map();
-	guilds: Map<string, Guild> = new Map();
+	guilds: Map<string, DiscordGuild> = new Map();
 	ws: WebSocket | null = null;
 
-	user: User | null = null;
+	user: DiscordUser | null = null;
 
 	helloTimeout: NodeJS.Timer | null = null;
 	heartbeatHandler: NodeJS.Timer | null = null;
@@ -168,8 +168,9 @@ class Client {
 				this.guilds.set(guild.id, guild);
 			} break;
 
+			case 'MESSAGE_UPDATE':
 			case 'MESSAGE_CREATE': {
-				const msg = payload.d as Message;
+				const msg = payload.d as DiscordMessage;
 
 				if (!msg.content && !msg.embeds?.length && !msg.attachments?.length) return;
 
@@ -262,13 +263,15 @@ class Client {
 
 				const item: StoreItem<'discord'> = {
 					savedAt: Date.now(),
+					edited: false,
 					type: 'discord',
 					id: msg.id,
 					listeners: [...new Set(matchedListeners.map(l => l.name).filter(Boolean))],
 					groups,
 					author: {
 						name: msg.author.username,
-						avatar: authorAvatar && authorAvatar != 'none' ? authorAvatar + '.png' : 'none'
+						avatar: authorAvatar && authorAvatar != 'none' ? authorAvatar + '.png' : 'none',
+						id: msg.author.id
 					},
 					origin: {
 						entity: await getDiscordEntityDetails(msg, guild, channel),
@@ -276,6 +279,7 @@ class Client {
 					},
 					content,
 					attachments,
+					embeds: msg.embeds,
 					reply: reply ? {
 						attachmentCount: reply.attachments.length,
 						author: reply.author.username,
@@ -290,7 +294,18 @@ class Client {
 				};
 
 				for (const group of groups) {
-					if (storage.storage[group]?.find(i => i.id === item.id)) {
+					const groupStorage = storage.storage[group];
+					const existing = groupStorage?.findIndex(i => i.id === item.id);
+
+					// Process edits
+					if (existing != void 0 && existing != -1) {
+						const previousItem = groupStorage[existing];
+
+						item.savedAt = previousItem.savedAt;
+						item.edited = true;
+
+						storage.storage[group][existing] = item;
+						storage.emit('updated');
 						continue;
 					}
 
@@ -301,7 +316,7 @@ class Client {
 		}
 	}
 
-	getContent(msg: Message) {
+	getContent(msg: DiscordMessage) {
 		let content = msg.content;
 
 		if (getDiscordReplacements()) {
