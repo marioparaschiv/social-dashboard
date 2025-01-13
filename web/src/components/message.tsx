@@ -1,13 +1,15 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip';
 import MessageAttachment from '~/components/message-attachment';
 import BackendMedia from '~/components/backend-media';
+import { Separator } from '~/components/ui/separator';
+import type { StoreItem, User } from '@shared/types';
 import Timestamp from '~/components/timestamp';
-import type { StoreItem, User } from '@types';
 import useBackend from '~/hooks/use-backend';
 import Markdown from '~/components/markdown';
+import { Link2, Reply } from 'lucide-react';
 import config from '@web-config.json';
-import { Reply } from 'lucide-react';
 import { useMemo } from 'react';
+import { toast } from 'sonner';
 import { cn } from '~/utils';
 
 
@@ -34,9 +36,56 @@ function Message({ message, ...props }: MessageProps) {
 		<div className='group-hover:flex absolute hidden border right-1 top-1 rounded-lg'>
 			<button
 				onClick={() => backend.replyTo(message)}
-				className='flex gap-1 items-center text-xs bg-background/40 hover:bg-background/60 rounded-md p-1'
+				className='flex gap-1 items-center text-xs bg-background/40 hover:bg-background/60 rounded-md rounded-tr-none rounded-br-none p-1'
 			>
 				<Reply size={18} /> Reply
+			</button>
+			<Separator orientation='vertical' />
+			<button
+				className='flex gap-1 items-center text-xs bg-background/40 hover:bg-background/60 rounded-md rounded-tl-none rounded-bl-none p-1'
+				onClick={() => {
+					let url;
+
+					switch (message.type) {
+						case 'discord': {
+							const msg = message as StoreItem<'discord'>;
+
+							url = `discord://discord.com/channels/${msg.parameters.guildId ?? '@me'}/${msg.parameters.channelId}/${msg.parameters.messageId}`;
+						} break;
+
+						case 'telegram': {
+							const msg = message as StoreItem<'telegram'>;
+
+							if (msg.parameters.originId.startsWith('-100')) {
+								// Channel
+								const channelId = msg.parameters.originId.slice(4); // Remove "-100" prefix
+								url = `tg://privatepost?channel=${channelId}&post=${msg.parameters.messageId}`;
+							} else {
+								// Private chat or DM
+								return toast.error('Failed to open telegram link. Please keep in mind that the telegram URL scheme does not support DM chats.');
+							}
+
+							// url = `https://t.me/c/${msg.parameters.msg.parameters.originId}/${msg.parameters.messageId}`;
+						} break;
+					}
+
+					if (!url) return;
+
+					try {
+						// Try to open Discord app
+						window.open(url, '_blank', 'noopener,noreferrer');
+						// window.location.href = url;
+
+						// // If app doesn't open, try web version
+						// if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+						// 	window.open(`https://discord.com/users/${userId}`, '_blank', 'noopener,noreferrer');
+						// }
+					} catch (error) {
+						console.error('Failed top open external URL:', error);
+					}
+				}}
+			>
+				<Link2 size={18} /> Open
 			</button>
 		</div>
 		<div className='flex-shrink-0 m-2 self-start'>
@@ -46,8 +95,7 @@ function Message({ message, ...props }: MessageProps) {
 					formatDiscordOrigin(message.origin.entity).at(0)?.toUpperCase()) ?? '?'}
 			</div> : <BackendMedia
 				className='w-11 h-11 rounded-full'
-				hash={message.author.avatar}
-				ext='png'
+				path={message.author.avatar}
 				name='avatar.png'
 			/>}
 		</div>
@@ -66,8 +114,7 @@ function Message({ message, ...props }: MessageProps) {
 									formatDiscordOrigin(message.origin).at(0)?.toUpperCase()) ?? '?'}
 							</div> : <BackendMedia
 								className='w-6 h-6 rounded-full'
-								hash={message.origin.avatar}
-								ext='png'
+								path={message.origin.avatar}
 								name='avatar.png'
 							/>}
 							<span className='text-xs text-foreground/60'><b>{message.listeners.join(', ')}</b></span>
@@ -91,14 +138,14 @@ function Message({ message, ...props }: MessageProps) {
 				<Markdown>{message.content}</Markdown>
 			</span>
 			{/* Images */}
-			{imageAttachments.length !== 0 && <div className={cn('my-1 w-full grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 items-stretch', message.content && 'mt-2')}>
+			{imageAttachments.length !== 0 && <div className={cn('my-1 w-full grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 items-stretch', message.content && 'mt-2')}>
 				{imageAttachments.map((attachment, index) => <MessageAttachment
 					attachment={attachment}
 					onClick={() => backend.viewImages(message.attachments)}
 					key={`message-${message.savedAt}-attachment-${index}`}
 				/>)}
 			</div>}
-			{otherAttachments.length !== 0 && <div className={cn('my-1 w-full grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 items-stretch', imageAttachments.length || message.content && 'mt-2')}>
+			{otherAttachments.length !== 0 && <div className={cn('my-1 w-full grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 items-stretch', imageAttachments.length || message.content && 'mt-2')}>
 				{/* Attachments */}
 				{message.attachments.filter(r => !r.type.startsWith('image/')).map((attachment, index) => <MessageAttachment
 					attachment={attachment}

@@ -1,4 +1,4 @@
-import type { Defaults, DiscordListener, DiscordReplacements, TelegramListener } from '@types';
+import type { Defaults, DiscordListener, DiscordReplacements, TelegramListener } from '@shared/types';
 import configWatcher from '~/config-watcher';
 import { logger } from '~/index';
 import storage from '~/storage';

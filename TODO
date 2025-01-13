@@ -2,13 +2,19 @@
 # Nicknames
 # Add Configuration Panel
 # Profile Popouts
-# Show Stickers, Videos, GIFs
 # Embeds
 
-- To Finish
-# Videos (90% done, need to fix reload on new message bug)
-
 - Done
+# GIFs
+# Stickers
+# Videos
+# Reworked image/video/file system
+# De-duplicating
+# Fixed slow replies
+# In-app opening (Telegram)
+# In-app opening (Discord)
+
+- Old
 # Search Bar
 # Config Hot Reload
 # Double Click Reply
@@ -17,8 +23,6 @@
 # Enter to confirm reply
 # Defaults
 # Image Caching
-
-- Old
 # Replies
 # Fix Auto Scroll
 # Fix Category Ordering

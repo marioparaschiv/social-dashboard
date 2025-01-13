@@ -1,6 +1,6 @@
+import type { StoreItem, StoreItemAttachment, TelegramListener } from '@shared/types';
 import { channelPredicate, chatPredicate, dmPredicate } from '~/telegram/predicates';
 import type { TelegramClientParams } from 'telegram/client/telegramBaseClient';
-import type { StoreItem, StoreItemAttachment, TelegramListener } from '@types';
 import { getTelegramEntityDetails } from '~/utils/get-entity-details';
 import { NewMessage, type NewMessageEvent } from 'telegram/events';
 import { TelegramClient } from 'telegram/client/TelegramClient';
@@ -116,8 +116,7 @@ class Client extends TelegramClient {
 			attachments.push({
 				name: file.name,
 				type: file.mimeType,
-				identifier: file.hash,
-				ext
+				path: `${file.hash}${ext ? '.' + ext : ''}`,
 			});
 		}
 
@@ -125,12 +124,13 @@ class Client extends TelegramClient {
 
 		const item: StoreItem<'telegram'> = {
 			type: 'telegram',
+			id: event.message.id.toString(),
 			author: {
 				name: getDisplayName(author) ?? 'Unknown',
-				avatar: authorAvatar
+				avatar: authorAvatar && authorAvatar != 'none' ? authorAvatar + '.png' : 'none'
 			},
 			origin: {
-				avatar: originAvatar,
+				avatar: originAvatar && originAvatar != 'none' ? originAvatar + '.png' : 'none',
 				entity: await getTelegramEntityDetails(origin, reply)
 			},
 			attachments,
@@ -151,6 +151,10 @@ class Client extends TelegramClient {
 		};
 
 		for (const group of groups) {
+			if (storage.storage[group]?.find(i => i.id === item.id)) {
+				continue;
+			}
+
 			storage.add(group, item);
 		}
 	}

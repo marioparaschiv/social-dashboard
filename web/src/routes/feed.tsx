@@ -129,7 +129,7 @@ function Feed() {
 			className='flex-1 w-full flex rounded-md border'
 			direction='horizontal'
 		>
-			{groups.length !== 0 ? groups.map((group, index) => data[group]?.length !== 0 && <>
+			{groups.length !== 0 ? groups.map((group, index) => <>
 				<Panel
 					data={data[group as keyof typeof data]}
 					group={group}

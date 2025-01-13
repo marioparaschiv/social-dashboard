@@ -1,4 +1,4 @@
-import type { RequestVideo, VideoResponse } from '@types';
+import type { RequestVideo, VideoResponse } from '@shared/types';
 import { DispatchType } from '@shared/constants';
 import { FILE_CACHE_PATH } from '~/constants';
 import { existsSync } from 'node:fs';

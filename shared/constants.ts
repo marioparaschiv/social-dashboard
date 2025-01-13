@@ -1,3 +1,6 @@
+import webConfig from '../web-config.json';
+
+
 export enum DispatchType {
 	WELCOME = 'welcome',
 	DATA_UPDATE = 'data-update',
@@ -11,3 +14,5 @@ export enum DispatchType {
 	REQUEST_VIDEO = 'request-video',
 	REQUEST_REPLY = 'request-reply'
 }
+
+export const API_URL = `http${webConfig.apiSSL ? 's' : ''}://${webConfig.ip}${webConfig.apiPort ? ':' + webConfig.apiPort : ''}`;

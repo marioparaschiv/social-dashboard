@@ -1,178 +1,189 @@
-import { memo, useEffect, useState, createContext, useContext, useRef } from 'react';
-import { Skeleton } from '~/components/ui/skeleton';
-import { DispatchType } from '@shared/constants';
-import useBackend from '~/hooks/use-backend';
-import { cn, dataURLToBlob } from '~/utils';
+import { memo, useEffect, useMemo, useRef } from 'react';
+import { API_URL } from '@shared/constants';
+import lottie from 'lottie-web';
+import { cn } from '~/utils';
+import pako from 'pako';
 
-
-// Create a context to handle the cache
-interface MediaCacheContextType {
-	cache: Record<string, string>;
-	pending: Record<string, Promise<string>>;
-}
-
-const MediaCacheContext = createContext<MediaCacheContextType>({
-	cache: {},
-	pending: {}
-});
-
-export const MediaCacheProvider = ({ children }: { children: React.ReactNode; }) => {
-	const cacheRef = useRef<MediaCacheContextType>({
-		cache: {},
-		pending: {}
-	});
-
-	return (
-		<MediaCacheContext.Provider value={cacheRef.current}>
-			{children}
-		</MediaCacheContext.Provider>
-	);
-};
-
-function createPendingPromise(
-	hash: string,
-	ext: string,
-	backend: ReturnType<typeof useBackend>,
-	cache: Record<string, string>,
-	pending: Record<string, Promise<string>>,
-	isVideo: boolean
-): [Promise<string>, () => void] {
-	let cleanup: (() => void) | undefined;
-
-	const promise = new Promise<string>((resolve) => {
-		function onResponse(payload: { hash: string; data: string; }) {
-			if (payload.hash !== hash) return;
-
-			if (cache[hash] !== payload.data) {
-				cache[hash] = payload.data;
-			}
-
-			delete pending[hash];
-			resolve(payload.data);
-		}
-
-		const responseType = isVideo ? DispatchType.VIDEO_RESPONSE : DispatchType.IMAGE_RESPONSE;
-		const requestType = isVideo ? DispatchType.REQUEST_VIDEO : DispatchType.REQUEST_IMAGE;
-
-		backend.on(responseType, onResponse);
-		backend.send(requestType, { hash, ext });
-
-		cleanup = () => {
-			backend.off(responseType, onResponse);
-			delete pending[hash];
-		};
-	});
-
-	return [promise, cleanup!];
-}
 
 type BackendMediaProps = {
-	hash: string;
 	name: string;
-	ext: string;
+	path: string;
 	type?: string;
 	className?: string;
 	onClick?: (e: React.MouseEvent<HTMLElement>) => void;
 };
 
-const BackendMedia = memo(({ hash, ext, name, type = 'image/png', className, onClick }: BackendMediaProps) => {
-	const { cache, pending } = useContext(MediaCacheContext);
-	const [src, setSrc] = useState<string | undefined>(cache[hash]);
-	const [error, setError] = useState<string | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
-	const backend = useBackend();
-	const cleanupRef = useRef<(() => void) | undefined>(null);
-	const videoRef = useRef<HTMLVideoElement>(null);
-	const isVideo = type.startsWith('video/');
+// Move this outside component to prevent recreation
+const buildBackendURL = (path: string) => `${API_URL}/media/${path}`;
 
+// Cache for video elements to prevent recreation during virtualization
+const videoCache = new Map<string, HTMLVideoElement>();
+const lottieCache = new Map<string, any>();
+
+const Video = memo(({ path, type, className, onClick }: BackendMediaProps) => {
+	const url = useMemo(() => buildBackendURL(path), [path]);
+	const containerRef = useRef<HTMLDivElement>(null);
+
+	// Initialize or get cached video
 	useEffect(() => {
-		if (src || !hash) return;
+		const container = containerRef.current;
+		if (!container) return;
 
-		if (cache[hash]) {
-			setSrc(cache[hash]);
-			return;
+		let video = videoCache.get(path);
+
+		if (!video) {
+			// Create new video element if not in cache
+			video = document.createElement('video');
+			video.className = "w-full h-full object-contain aspect-video appearance-none bg-foreground/10 rounded-md";
+			video.controls = type !== 'image/gif'; // No controls for GIFs
+			video.preload = "metadata";
+			video.loop = type === 'image/gif'; // Loop GIFs
+			video.autoplay = type === 'image/gif'; // Autoplay GIFs
+			video.muted = type === 'image/gif'; // Mute GIFs
+			video.playsInline = true; // Add playsinline for mobile support
+
+			const source = document.createElement('source');
+			source.src = url;
+			source.type = type ?? 'video/mp4';
+			video.appendChild(source);
+
+			// Start playing as soon as enough data is loaded for GIFs
+			if (type === 'image/gif') {
+				video.addEventListener('loadeddata', () => {
+					video!.play().catch(console.error);
+				}, { once: true });
+			}
+
+			videoCache.set(path, video);
 		}
 
-		setIsLoading(true);
-		if (pending[hash] != void 0) {
-			pending[hash].then(setSrc);
-		} else {
-			const [promise, cleanup] = createPendingPromise(hash, ext, backend, cache, pending, isVideo);
-			pending[hash] = promise;
-			cleanupRef.current = cleanup;
-			promise.then((data) => {
-				if (isVideo) {
-					const blob = dataURLToBlob(data, type);
-					const blobUrl = URL.createObjectURL(blob);
-					cache[hash] = blobUrl; // Store the Blob URL in cache
-					setSrc(blobUrl);
-				} else {
-					cache[hash] = data;
-					setSrc(data);
-				}
-			});
+		// Add video to container
+		container.appendChild(video);
+
+		// For GIFs, ensure they're playing when added back to the DOM
+		if (type === 'image/gif' && video.paused) {
+			video.play().catch(console.error);
 		}
 
+		// Cleanup
 		return () => {
-			cleanupRef.current?.();
-			cleanupRef.current = undefined;
-		};
-	}, [hash, backend, src, isVideo, type]);
-
-	// Add cleanup for all Blob URLs when component unmounts
-	useEffect(() => {
-		return () => {
-			if (isVideo && src?.startsWith('blob:')) {
-				URL.revokeObjectURL(src);
+			if (container.contains(video)) {
+				container.removeChild(video);
 			}
 		};
-	}, [isVideo, src]);
+	}, [path, url, type]);
 
-	if (!src) return <Skeleton className={className} />;
+	return (
+		<div ref={containerRef} className={cn('relative w-full', className)} onClick={onClick} />
+	);
+});
 
-	if (isVideo) {
-		return (
-			<div className={cn('relative w-full', className)}>
-				{isLoading && (
-					<div className="absolute inset-0 flex items-center justify-center bg-background/50">
-						<Skeleton className="w-12 h-12 rounded-full" />
-					</div>
-				)}
-				<video
-					ref={videoRef}
-					className={cn('w-full h-full object-contain aspect-video appearance-none bg-foreground/10 rounded-md', isLoading && 'opacity-0')}
-					controls
-					preload="metadata"
-					src={src}
-					onLoadedData={() => {
-						setIsLoading(false);
-						setError(null);
-					}}
-					onError={(e) => {
-						console.error('Video loading error:', e);
-						setError('Failed to load video');
-						setIsLoading(false);
-					}}
-					onClick={(e) => onClick?.(e)}
-				>
-					{error && <div className="absolute inset-0 flex items-center justify-center text-red-500">{error}</div>}
-					Your browser does not support the video tag.
-				</video>
-			</div>
-		);
-	}
+Video.displayName = 'Video';
+
+const Image = memo(({ path, className, onClick }: BackendMediaProps) => {
+	const url = useMemo(() => buildBackendURL(path), [path]);
 
 	return (
 		<img
 			className={cn('rounded-md w-full h-full', className)}
 			role="button"
-			loading='eager'
-			decoding='async'
-			src={src}
-			onClick={(e) => onClick?.(e)}
-			onError={() => setError('Failed to load image')}
+			loading="lazy"
+			decoding="async"
+			src={url}
+			onClick={onClick}
 		/>
 	);
 });
+
+Image.displayName = 'Image';
+
+const Sticker = memo(({ path, className, onClick }: BackendMediaProps) => {
+	const url = useMemo(() => buildBackendURL(path), [path]);
+	const containerRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		const container = containerRef.current;
+		if (!container) return;
+
+		console.log('Loading sticker:', url);
+
+		let animation = lottieCache.get(path);
+
+		const loadSticker = async () => {
+			try {
+				// Fetch the compressed data
+				const response = await fetch(url);
+				const arrayBuffer = await response.arrayBuffer();
+
+				// Decompress the gzipped data
+				const decompressed = pako.inflate(new Uint8Array(arrayBuffer));
+
+				// Convert to JSON
+				const jsonString = new TextDecoder().decode(decompressed);
+				const animationData = JSON.parse(jsonString);
+
+				// Create new animation with the decompressed data
+				animation = lottie.loadAnimation({
+					container,
+					renderer: 'svg',
+					loop: true,
+					autoplay: true,
+					animationData,
+				});
+
+				// Add debug event listeners
+				animation.addEventListener('data_ready', () => {
+					console.log('Lottie data ready for:', path);
+				});
+
+				animation.addEventListener('DOMLoaded', () => {
+					console.log('Lottie DOM loaded for:', path);
+				});
+
+				animation.addEventListener('error', (error) => {
+					console.error('Lottie error for:', path, error);
+				});
+
+				lottieCache.set(path, animation);
+			} catch (error) {
+				console.error('Failed to load sticker:', error);
+			}
+		};
+
+		loadSticker();
+
+		return () => {
+			if (animation) {
+				animation.destroy();
+			}
+		};
+	}, [path, url]);
+
+	return (
+		<div
+			ref={containerRef}
+			className={cn('relative w-32 h-32', className)}
+			onClick={onClick}
+		/>
+	);
+});
+
+Sticker.displayName = 'Sticker';
+
+const BackendMedia = memo(({ path, type = 'image/png', ...props }: BackendMediaProps) => {
+	// Add sticker detection
+	const isSticker = useMemo(() => type === 'application/x-tgsticker', [type]);
+	const isVideo = useMemo(() => type.startsWith('video/') || type === 'image/gif', [type]);
+
+	if (isSticker) {
+		return <Sticker path={path} {...props} />;
+	}
+
+	return isVideo ?
+		<Video path={path} type={type} {...props} /> :
+		<Image path={path} {...props} />;
+});
+
+BackendMedia.displayName = 'BackendMedia';
 
 export default BackendMedia;

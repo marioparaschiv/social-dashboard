@@ -1,7 +1,7 @@
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '~/components/ui/carousel';
 import { createContext, createElement, useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
-import { Dispatch, type RequestReply, type StoreItem } from '@types';
+import { Dispatch, type RequestReply, type StoreItem } from '@shared/types';
 import { WheelGesturesPlugin } from 'embla-carousel-wheel-gestures';
 import { useCarousel } from '~/components/ui/carousel';
 import BackendMedia from '~/components/backend-media';
@@ -349,9 +349,8 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 										{viewingImages.map(attachment => <CarouselItem>
 											<BackendMedia
 												className='w-full h-full object-contain'
-												hash={attachment.identifier}
 												name={attachment.name}
-												ext={attachment.ext}
+												path={attachment.path}
 												type={attachment.type}
 											/>
 										</CarouselItem>)}

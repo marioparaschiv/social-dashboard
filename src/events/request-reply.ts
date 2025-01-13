@@ -1,8 +1,8 @@
 import { clients as telegramClients } from '~/telegram';
 import { clients as discordClients } from '~/discord';
+import type { RequestReply } from '@shared/types';
 import { DispatchType } from '@shared/constants';
 import { sendMessage } from '~/discord/api';
-import type { RequestReply } from '@types';
 import { sleep } from '@shared/utils';
 import type { WebSocket } from 'ws';
 import { send } from '~/socket';
@@ -59,17 +59,16 @@ async function handler(ws: WebSocket, payload: RequestReply) {
 				return send(ws, DispatchType.REPLY_RESPONSE, { uuid, success: false });
 			}
 
-			const dialogs = await client.getDialogs();
-
-			const dialog = dialogs.find(r => r.id.toString() === request.parameters.originId);
-			if (!dialog) {
-				return send(ws, DispatchType.REPLY_RESPONSE, { uuid, success: false });
-			}
-
 			let remainingRetries = 3;
 			while (remainingRetries != 0) {
 				try {
-					await client.sendMessage(dialog.entity, {
+					// Directly get the entity by ID instead of searching through dialogs
+					const entity = await client.getEntity(originId);
+					if (!entity) {
+						return send(ws, DispatchType.REPLY_RESPONSE, { uuid, success: false });
+					}
+
+					await client.sendMessage(entity, {
 						message: payload.content,
 						replyTo: Number(messageId),
 					});

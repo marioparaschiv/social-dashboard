@@ -1,5 +1,6 @@
 import type { getDiscordEntityDetails, getTelegramEntityDetails } from '~/utils/get-entity-details';
 import type { DispatchType } from '@shared/constants';
+import type { JSX } from 'react';
 
 
 declare module 'ws' {
@@ -7,6 +8,19 @@ declare module 'ws' {
 		authenticated: boolean;
 	}
 }
+
+export type DialogVariants = 'confirm' | 'default';
+
+export interface DialogOptions {
+	title: JSX.Element | string;
+	description?: JSX.Element | string;
+	content: JSX.Element | string;
+	footer?: JSX.Element | string;
+	variant?: DialogVariants;
+	uuid?: string;
+}
+
+export type InternalDialogOptions = DialogOptions & { closing: boolean; uuid: string; };
 
 
 export interface AuthRequest {
@@ -103,8 +117,7 @@ export type Defaults = Partial<Omit<
 
 export interface StoreItemAttachment {
 	name: string;
-	identifier: string;
-	ext: string;
+	path: string;
 	type: string;
 }
 
@@ -130,6 +143,7 @@ export interface StoreItem<T extends string = StoreItemTypes, K = StoreItemParam
 	savedAt: number;
 	type: T;
 	groups: string[];
+	id: string;
 	author: {
 		name: string;
 		avatar: string;

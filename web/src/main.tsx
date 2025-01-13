@@ -1,10 +1,10 @@
 import './styles.css';
 
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { MediaCacheProvider } from '~/components/backend-media';
 import ThemeProvider from '~/providers/theme-provider.tsx';
 import BackendProvider from '~/providers/backend-provider';
 import SearchProvider from '~/providers/search-provider';
+import { Toaster } from '~/components/ui/sonner';
 import { createRoot } from 'react-dom/client';
 import * as Pages from '~/routes';
 
@@ -18,9 +18,8 @@ createRoot(root).render(
 	<ThemeProvider>
 		<SearchProvider>
 			<BackendProvider>
-				<MediaCacheProvider>
-					<RouterProvider router={router} />
-				</MediaCacheProvider>
+				<Toaster />
+				<RouterProvider router={router} />
 			</BackendProvider>
 		</SearchProvider>
 	</ThemeProvider>

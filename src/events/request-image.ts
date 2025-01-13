@@ -1,6 +1,6 @@
+import type { RequestImage } from '@shared/types';
 import { DispatchType } from '@shared/constants';
 import { FILE_CACHE_PATH } from '~/constants';
-import type { RequestImage } from '@types';
 import { existsSync } from 'node:fs';
 import type { WebSocket } from 'ws';
 import { fileToURL } from '~/utils';

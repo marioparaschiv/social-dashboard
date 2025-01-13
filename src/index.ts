@@ -1,4 +1,5 @@
 import '~/socket';
+import '~/api';
 
 import { createLogger } from '~/structures/logger';
 import { initializeCache } from '~/file-cache';
