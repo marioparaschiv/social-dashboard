@@ -1,6 +1,8 @@
 {
 	"ip": "localhost",
 	"port": 29435,
+	"apiPort": 29436,
+	"apiSSL": false,
 	"telegram": {
 		"userColours": {
 			"ripeternal": "rgba(255, 0, 255)"

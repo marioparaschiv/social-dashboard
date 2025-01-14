@@ -1,4 +1,4 @@
-import type { RequestAuth, AuthResponse } from '@shared/types';
+import type { AuthResponse, RequestAuth } from '@shared/types';
 import { DispatchType } from '@shared/constants';
 import type { WebSocket } from 'ws';
 import config from '@config.json';

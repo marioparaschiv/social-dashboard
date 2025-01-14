@@ -1,4 +1,4 @@
-import type { GetMessageOptions, Message, SendMessageOptions } from '@shared/types';
+import type { GetMessageOptions, DiscordMessage, SendMessageOptions } from '@shared/types';
 import { BUILD_NUMBER_LENGTH, BUILD_NUMBER_STRING } from '~/discord/constants';
 import { createLogger } from '~/structures/logger';
 import sleep from '@shared/utils/sleep';
@@ -34,7 +34,7 @@ export async function sendMessage(options: SendMessageOptions) {
 	return true;
 }
 
-export async function getMessage(options: GetMessageOptions): Promise<Message | null> {
+export async function getMessage(options: GetMessageOptions): Promise<DiscordMessage | null> {
 	options.retriesRemaining ??= 3;
 
 	if (options.retriesRemaining === 0) return null;
@@ -56,7 +56,7 @@ export async function getMessage(options: GetMessageOptions): Promise<Message | 
 		return null;
 	}
 
-	return json?.[0] as Message;
+	return json?.[0] as DiscordMessage;
 }
 
 export function createHeaders(token: string) {

@@ -1,4 +1,4 @@
-import type { Guild, Message } from '@shared/types';
+import type { DiscordGuild, DiscordMessage } from '@shared/types';
 import { Api } from 'telegram';
 
 
@@ -77,7 +77,7 @@ export async function getTelegramEntityDetails(peer: any, reference?: Api.Messag
 	}
 }
 
-export async function getDiscordEntityDetails(message: Message, guild: Guild, channel) {
+export async function getDiscordEntityDetails(message: DiscordMessage, guild: DiscordGuild, channel) {
 	if (!channel) return null;
 
 	try {

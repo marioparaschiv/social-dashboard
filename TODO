@@ -1,12 +1,33 @@
 - TODO
-# Nicknames
 # Add Configuration Panel
 # Profile Popouts
-# Show Stickers, Videos, GIFs
-# Embeds
 
 - Done
-# Duping
+# Embeds
+# Process Message Edits on dashboard
+# Nicknames
+# GIFs
+# Stickers
+# Videos
+# Reworked image/video/file system
+# De-duplicating
+# Fixed slow replies
+# In-app opening (Telegram)
+# In-app opening (Discord)
 
-- To Finish
-# Videos (90% done, need to fix reload on new message bug)
+- Old
+# Search Bar
+# Config Hot Reload
+# Double Click Reply
+# Message purge on the backend
+# Image Modal
+# Enter to confirm reply
+# Defaults
+# Image Caching
+# Replies
+# Fix Auto Scroll
+# Fix Category Ordering
+# Reply Window Fix
+# Replying To filters
+# User Blacklist
+# Allow Bots for Telegram

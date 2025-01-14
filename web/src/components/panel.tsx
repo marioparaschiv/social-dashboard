@@ -4,6 +4,7 @@ import { ResizablePanel } from '~/components/ui/resizable';
 import { Separator } from '~/components/ui/separator';
 import Message from '~/components/message';
 import { Virtuoso } from 'react-virtuoso';
+import { SearchX } from 'lucide-react';
 
 
 interface PanelOptions {
@@ -22,8 +23,12 @@ function Panel(props: PanelOptions) {
 	>
 		<h1 className='font-bold p-3'>{group}</h1>
 		<Separator />
-		<div className='h-full'>
-			<PanelContent data={data} group={group} />
+		<div className='w-full h-full'>
+			{!data.length && <div className='w-full h-full flex flex-col gap-4 items-center justify-center'>
+				<SearchX size={128} />
+				<span className='font-bold text-xl'>No messages found.</span>
+			</div>}
+			{data.length && <PanelContent data={data} group={group} />}
 		</div>
 	</ResizablePanel>;
 }

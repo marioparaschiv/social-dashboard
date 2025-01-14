@@ -27,7 +27,7 @@ interface BackendContextProps {
 	viewingImages: StoreItem['attachments'];
 	viewImages: (attachments: StoreItem['attachments']) => void;
 
-	send: (type: DispatchType, payload?: Record<PropertyKey, any>) => void;
+	send: <T extends DispatchType>(type: T, payload?: DispatchPayload[T]) => void;
 	on: (type: DispatchType, callback: (...args: any[]) => any) => () => void;
 	once: (type: DispatchType, callback: (...args: any[]) => any) => () => void;
 	off: (type: DispatchType, callback: (...args: any[]) => any) => void;
@@ -65,7 +65,7 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 
 	const [viewingImages, viewImages] = useState<StoreItem['attachments']>([]);
 
-	const [data, setData] = useState<{ data: StoreItem[]; }>({ data: [] });
+	const [data, setData] = useState<Record<PropertyKey, StoreItem[]>>({});
 	const [authenticated, setAuthenticated] = useState<boolean>(false);
 	const [state, setState] = useState<SocketStates>('idle');
 	const ws = useRef<WebSocket | null>(null);
@@ -355,9 +355,8 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 										{viewingImages.map(attachment => <CarouselItem>
 											<BackendMedia
 												className='w-full h-full object-contain'
-												hash={attachment.identifier}
 												name={attachment.name}
-												ext={attachment.ext}
+												path={attachment.path}
 												type={attachment.type}
 											/>
 										</CarouselItem>)}
