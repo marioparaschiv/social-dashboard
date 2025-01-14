@@ -10,6 +10,7 @@ declare module 'ws' {
 	}
 }
 
+
 export type DialogVariants = 'confirm' | 'default';
 
 export interface DialogOptions {
@@ -91,19 +92,6 @@ export interface DispatchPayload {
 	[DispatchType.FETCH_CHATS]: void;
 	[DispatchType.FETCH_CHATS_RESPONSE]: FetchedChats;
 }
-
-export type DialogVariants = 'confirm' | 'default';
-
-export interface DialogOptions {
-	title: JSX.Element | string;
-	description?: JSX.Element | string;
-	content: JSX.Element | string;
-	footer?: JSX.Element | string;
-	variant?: DialogVariants;
-	uuid?: string;
-}
-
-export type InternalDialogOptions = DialogOptions & { closing: boolean; uuid: string; };
 
 export interface FetchedChats {
 	discord: SelectableChannel[];
