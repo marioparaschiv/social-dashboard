@@ -14,8 +14,7 @@ export enum DispatchType {
 	REQUEST_VIDEO = 'request-video',
 	REQUEST_REPLY = 'request-reply',
 
-	ADD_CHATS_REQUEST = 'add-chats',
-	ADD_CHATS_RESPONSE = 'add-chats-response',
+	SUBSCRIBE_CHATS = 'subscribe-chats',
 
 	FETCH_CHATS = 'fetch-chats',
 	FETCH_CHATS_RESPONSE = 'fetch-chats-response'

@@ -1,15 +1,15 @@
 import type { WebSocket } from 'ws';
 
-
-export type EventHandler = (ws: WebSocket, payload: any) => void;
-
-import requestAuth from './request-auth';
-import requestData from './request-data';
-import requestImage from './request-image';
+import subscribeChats from './subscribe-chats';
 import requestVideo from './request-video';
 import requestReply from './request-reply';
+import requestImage from './request-image';
+import requestData from './request-data';
+import requestAuth from './request-auth';
 import fetchChats from './fetch-chats';
-import addChats from './add-chats';
+
+
+export type EventHandler = (ws: WebSocket, payload: any) => void;
 
 const handlers: Record<string, EventHandler> = {
 	'request-auth': requestAuth,
@@ -18,7 +18,7 @@ const handlers: Record<string, EventHandler> = {
 	'request-video': requestVideo,
 	'request-reply': requestReply,
 	'fetch-chats': fetchChats,
-	'add-chats': addChats
+	'subscribe-chats': subscribeChats
 };
 
 export default handlers;

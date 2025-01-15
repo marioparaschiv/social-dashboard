@@ -9,6 +9,7 @@ import { DispatchType } from '@shared/constants';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import { LoaderCircle } from 'lucide-react';
+import useChatsStore from '~/stores/chats';
 import config from '@web-config.json';
 import { sleep } from '@shared/utils';
 import { uuid } from '@shared/utils';
@@ -234,11 +235,10 @@ function BackendProvider({ children, ...props }: React.PropsWithChildren) {
 
 							setAuthenticated(true);
 
-							const storedChats = sessionStorage.getItem('chats');
-							const chats = storedChats ? JSON.parse(storedChats) : { discord: [], telegram: [] };
+							const { chats } = useChatsStore.getState();
 
-							send(DispatchType.ADD_CHATS_REQUEST, chats);
-							// send(DispatchType.REQUEST_DATA);
+							send(DispatchType.SUBSCRIBE_CHATS, { chats });
+							send(DispatchType.REQUEST_DATA);
 						} break;
 
 						case DispatchType.DATA_UPDATE: {

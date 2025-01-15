@@ -5,6 +5,7 @@ import { Separator } from '~/components/ui/separator';
 import Message from '~/components/message';
 import { Virtuoso } from 'react-virtuoso';
 import { SearchX } from 'lucide-react';
+import { cn } from '~/utils';
 
 
 interface PanelOptions {
@@ -19,16 +20,16 @@ function Panel(props: PanelOptions) {
 	return <ResizablePanel
 		className='flex flex-col h-full'
 		key={'panel-' + index}
-		defaultSize={50}
+		defaultSize={25}
 	>
 		<h1 className='font-bold p-3'>{group}</h1>
 		<Separator />
 		<div className='w-full h-full'>
-			{!data.length && <div className='w-full h-full flex flex-col gap-4 items-center justify-center'>
+			{!data?.length && <div className='w-full h-full flex flex-col gap-4 items-center justify-center'>
 				<SearchX size={128} />
 				<span className='font-bold text-xl'>No messages found.</span>
 			</div>}
-			{data.length && <PanelContent data={data} group={group} />}
+			{data?.length && <PanelContent data={data} group={group} />}
 		</div>
 	</ResizablePanel>;
 }
@@ -101,7 +102,7 @@ const PanelContent = memo(({ data, group }: PanelContentProps) => {
 			Item: forwardRef((props, ref: React.ForwardedRef<HTMLDivElement>) => (
 				<div
 					{...props}
-					className='flex flex-col px-1'
+					className={cn('flex flex-col px-1')}
 					ref={ref}
 				/>
 			))
@@ -116,11 +117,8 @@ interface PanelListItemProps {
 }
 
 const PanelListItem = memo(({ data, index, message }: PanelListItemProps) => {
-	return <div className='flex flex-col mt-1'>
-		<Message message={message}
-		/>
-		{index !== (data.length - 1) && <Separator className='!bg-foreground/10 mt-1' />}
-		{index === (data.length - 1) && <div className='mb-1' />}
+	return <div className={cn('flex flex-col', index === 0 && '-mb-1', index !== 0 && '-my-1')}>
+		<Message message={message} />
 	</div>;
 });
 

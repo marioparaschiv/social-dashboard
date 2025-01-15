@@ -26,7 +26,7 @@ export async function sendMessage(options: SendMessageOptions) {
 
 	if (!res.ok) {
 		options.retriesRemaining--;
-		logger.warn(`Got unexpected response while sending message: ${json} (Status: ${res.status}, Retries Remaining: ${options.retriesRemaining})`);
+		logger.warn(`Got unexpected response while sending message: ${JSON.stringify(json)} (Status: ${res.status}, Retries Remaining: ${options.retriesRemaining})`);
 		await sleep((json?.retry_after ?? 1) * 1000);
 		return sendMessage(options);
 	}

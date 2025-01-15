@@ -7,13 +7,13 @@ import useDialogStore from '~/stores/dialogs';
 type DialogProviderState = {
 	dialogs: Record<string, InternalDialogOptions>,
 	addDialog: (options: InternalDialogOptions) => void,
-	closeDialog: (options: InternalDialogOptions) => void;
+	closeDialog: (uuid: string) => void;
 };
 
 const initial: DialogProviderState = {
 	dialogs: {},
 	addDialog: (options: InternalDialogOptions) => void 0,
-	closeDialog: (options: InternalDialogOptions) => void 0
+	closeDialog: (uuid: string) => void 0
 };
 
 export const DialogProviderContext = createContext<DialogProviderState>(initial);
@@ -35,7 +35,7 @@ export default function DialogProvider({ children }: PropsWithChildren) {
 				onOpenChange={(open) => {
 					if (open) return;
 
-					closeDialog(dialog);
+					closeDialog(dialog.uuid);
 					setTimeout(() => removeDialog(dialog), 200);
 				}}
 			>

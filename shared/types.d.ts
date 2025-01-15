@@ -1,4 +1,3 @@
-import type { getDiscordEntityDetails, getTelegramEntityDetails } from '~/utils/get-entity-details';
 import type { DispatchType } from '@shared/constants';
 import type { JSX } from 'react';
 
@@ -6,7 +5,7 @@ import type { JSX } from 'react';
 declare module 'ws' {
 	interface WebSocket {
 		authenticated: boolean;
-		chats: FetchedChats;
+		chats: SelectableChannel[];
 	}
 }
 
@@ -86,8 +85,7 @@ export interface DispatchPayload {
 	[DispatchType.REQUEST_REPLY]: RequestReply;
 	[DispatchType.REPLY_RESPONSE]: ReplyResponse;
 
-	[DispatchType.ADD_CHATS_REQUEST]: AddChatsRequest;
-	[DispatchType.ADD_CHATS_RESPONSE]: AddChatsResponse;
+	[DispatchType.SUBSCRIBE_CHATS]: SubscribeChats;
 
 	[DispatchType.FETCH_CHATS]: void;
 	[DispatchType.FETCH_CHATS_RESPONSE]: FetchedChats;
@@ -99,12 +97,14 @@ export interface FetchedChats {
 }
 
 export interface SelectableChannel {
+	platform: 'discord' | 'telegram';
 	name: string;
-	icon: string;
 	id: string;
 }
 
-export type AddChatsRequest = { uuid: string; } & FetchedChats;
+export interface SubscribeChats {
+	chats: SelectableChannel[];
+}
 
 export interface AddChatsResponse {
 	uuid: string;
@@ -160,15 +160,6 @@ export interface TelegramListener {
 	subchannels?: string[];
 }
 
-export type Defaults = Partial<Omit<
-	DiscordListener | TelegramListener,
-	'name' |
-	'group' |
-	'chatId' |
-	'users' |
-	'replyingTo'
->>;
-
 export interface StoreItemAttachment {
 	name: string;
 	path: string;
@@ -196,25 +187,18 @@ export type StoreItemParameters<T extends string> = T extends 'discord' ? Discor
 export interface StoreItem<T extends string = StoreItemTypes, K = StoreItemParameters<T>> {
 	savedAt: number;
 	type: T;
-	groups: string[];
 	id: string;
 	embeds: Embed[];
 	edited: boolean;
 	author: {
 		name: string;
-		avatar: string;
 		id: string;
-	};
-	origin: {
-		entity: T extends 'telegram' ? Awaited<ReturnType<typeof getTelegramEntityDetails>> : T extends 'discord' ? Awaited<ReturnType<typeof getDiscordEntityDetails>> : never;
-		avatar: string;
 	};
 	reply: {
 		author: string;
 		content: string;
 		attachmentCount: number;
 	} | null;
-	listeners: string[];
 	content: string;
 	attachments: StoreItemAttachment[];
 	parameters: K;

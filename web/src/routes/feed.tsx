@@ -6,9 +6,9 @@ import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import useBackend from '~/hooks/use-backend';
 import useSearch from '~/hooks/use-search';
+import useChatsStore from '~/stores/chats';
 import { useMemo, useState } from 'react';
 import Panel from '~/components/panel';
-import config from '@web-config.json';
 import Page from '~/components/page';
 
 
@@ -20,6 +20,7 @@ function Feed() {
 	const [authFailed, setAuthFailed] = useState(false);
 	const [authOpen, setAuthOpen] = useState(false);
 	const [password, setPassword] = useState('');
+	const { chats } = useChatsStore();
 	const { search } = useSearch();
 	const backend = useBackend();
 
@@ -36,43 +37,7 @@ function Feed() {
 		return [category, messages];
 	})), [backend.data, search]);
 
-	const groups = useMemo(() => {
-		const keys = Object.keys(backend.data);
-
-		return keys
-			.filter(d => backend.data[d]?.length !== 0)
-			.sort((a, b) => {
-				// Handle items not in categoryOrder by putting them at the end
-				const indexA = config.categoryOrder.indexOf(a);
-				const indexB = config.categoryOrder.indexOf(b);
-
-				// If either item isn't found, put it at the end
-				if (indexA === -1) return 1;
-				if (indexB === -1) return -1;
-
-				return indexA - indexB;
-			});
-	}, [backend.data]);
-
 	return <Page className='flex flex-col max-h-dvh h-dvh' containerClassName='overflow-hidden'>
-		{/* <Button onClick={() => {
-			// Create Discord URL (using new Discord URL format)
-			const discordUrl = `discord://discord.com/channels/@me/1303511148078829588`;
-
-			try {
-				// Try to open Discord app
-				const newWindow = window.open(discordUrl, '_blank', 'noopener,noreferrer');
-
-				// If app doesn't open, try web version
-				if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-					window.open(`https://discord.com/channels/@me/1303511148078829588`, '_blank', 'noopener,noreferrer');
-				}
-			} catch (error) {
-				console.error(error);
-			}
-		}}>
-			Hi
-		</Button> */}
 		{(backend.state !== 'ready' || !backend.authenticated) && <div className='font-bold h-full w-full flex items-center flex-1 justify-center text-center'>
 			{backend.state !== 'ready' && <div className='flex items-center gap-2'>
 				{backend.state === 'idle' && <Moon size={16} />}
@@ -147,14 +112,14 @@ function Feed() {
 			className='flex-1 w-full flex rounded-md border'
 			direction='horizontal'
 		>
-			{groups.length !== 0 ? groups.map((group, index) => <>
+			{chats.length !== 0 ? chats.map((chat, index) => <>
 				<Panel
-					data={data[group as keyof typeof data]}
-					group={group}
-					key={`group-${group}`}
+					data={data[`${chat.platform}-${chat.id}` as keyof typeof data]}
+					group={chat.name}
+					key={`group-${chat.name}`}
 					index={index}
 				/>
-				{index !== groups.length - 1 && <ResizableHandle key={'handle-' + index} withHandle={true} />}
+				{index !== chats.length - 1 && <ResizableHandle key={'handle-' + index} withHandle={true} />}
 			</>) : <p className='p-2 font-bold w-full h-full flex items-center gap-2 justify-center m-auto'>
 				<MessageCircleOff size={16} />
 				No messages have been processed yet.

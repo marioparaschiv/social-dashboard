@@ -1,4 +1,4 @@
-import type { Defaults, DiscordListener, DiscordReplacements, TelegramListener } from '@shared/types';
+import type { DiscordListener, DiscordReplacements, TelegramListener } from '@shared/types';
 import configWatcher from '~/config-watcher';
 import { logger } from '~/index';
 import storage from '~/storage';
@@ -20,14 +20,6 @@ configWatcher.on('configReload', (configType) => {
 		logger.debug('Configuration reloaded.');
 	}
 });
-
-export function getDefaults(): Defaults {
-	return config.defaults ?? {
-		allowBots: false,
-		allowDMs: true,
-		blacklistedUsers: []
-	};
-}
 
 export function getDiscordListeners(): DiscordListener[] {
 	return config.discord?.listeners ?? [];

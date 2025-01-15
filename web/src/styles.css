@@ -39,12 +39,14 @@
 		--border: 0 0% 85%;
 		--background: 0 0% 100%;
 		--foreground: 0 0% 0%;
+		--primary: 0 0% 90%;
   }
 
   [data-theme='dark'] {
 		--border: 0 0% 15%;
 		--background: 0 0% 0;
 		--foreground: 0 0% 100%;
+		--primary: 0 0% 10%;
   }
 
 	[data-theme='light'] .prose {
@@ -135,7 +137,6 @@
 	}
 
 	::-webkit-scrollbar-thumb {
-		@apply bg-foreground/10;
-		border-radius: 5px;
+		@apply bg-foreground/10 rounded-full;
 	}
 }

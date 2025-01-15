@@ -1,11 +1,12 @@
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from '~/components/ui/navigation-menu';
-import AddChatsContent from '~/components/add-chats-content';
+import ModifyChats from '~/components/modals/modify-chats';
 import ThemeSwitcher from '~/components/theme-switcher';
-import { MessageSquareText, Plus } from 'lucide-react';
+import { Cog, MessageSquareText } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 import openDialog from '~/utils/openDialog';
 import useSearch from '~/hooks/use-search';
+import { uuid } from '@shared/utils';
 import { memo } from 'react';
 
 
@@ -38,12 +39,15 @@ const Header = memo(() => {
 		<div className='ml-auto flex gap-2 items-center'>
 			<ThemeSwitcher className='ml-auto' />
 			<Button className='w-9 h-9' size='icon' variant='outline' onClick={() => {
+				const id = uuid();
+
 				openDialog({
-					title: <span>Add Chat</span>,
-					content: <AddChatsContent />
+					uuid: id,
+					title: <span>Configure</span>,
+					content: <ModifyChats uuid={id} />
 				});
 			}}>
-				<Plus />
+				<Cog />
 			</Button>
 		</div>
 	</header>;

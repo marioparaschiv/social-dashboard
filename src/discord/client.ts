@@ -1,13 +1,13 @@
 import { OPCodes, ConnectionState, HELLO_TIMEOUT, HEARTBEAT_MAX_RESUME_THRESHOLD, MAX_CONNECTION_RETRIES } from '~/discord/constants';
 import type { DiscordGuild, DiscordMessage, StoreItem, StoreItemAttachment, DiscordUser } from '@shared/types';
-import { getDefaults, getDiscordListeners, getDiscordReplacements } from '~/config';
-import { getDiscordEntityDetails } from '~/utils/get-entity-details';
 import { createLogger } from '~/structures/logger';
+import { getDiscordReplacements } from '~/config';
 import { stripToken } from '~/utils/strip';
 import { getMessage } from '~/discord/api';
 import { cacheItem } from '~/file-cache';
 import { fetchBuffer } from '~/utils';
 import mimeTypes from 'mime-types';
+import { clients } from '~/socket';
 import config from '@config.json';
 import storage from '~/storage';
 import { hash } from '~/utils';
@@ -178,33 +178,8 @@ class Client {
 				const channel = this.channels.get(msg.channel_id);
 				const guild = this.guilds.get(msg.guild_id);
 
-				const defaults = getDefaults();
-
-				let matchedListeners = getDiscordListeners().filter(listener => {
-					if (listener.chatId && msg.channel_id !== listener.chatId) {
-						return false;
-					}
-
-					if (!(listener.allowBots ?? defaults.allowBots) && msg.author.bot) {
-						return false;
-					}
-
-					if (!(listener.allowDMs ?? defaults.allowDMs) && [1, 3].includes(channel.type)) {
-						return false;
-					}
-
-					if (listener.users?.length && !listener.users.includes(msg.author?.username)) {
-						return false;
-					}
-
-					if ((listener.blacklistedUsers ?? defaults.blacklistedUsers)?.length && listener.blacklistedUsers.includes(msg.author.username)) {
-						return false;
-					}
-
-					return true;
-				}) ?? [];
-
-				if (!matchedListeners?.length) return;
+				const id = channel.id;
+				if (![...clients.values()].some(client => client.chats.some(c => c.platform === 'discord' && c.id === id))) return;
 
 				const reply = msg.message_reference && await getMessage({
 					channel: msg.message_reference.channel_id,
@@ -212,36 +187,7 @@ class Client {
 					token: this.token
 				});
 
-				matchedListeners = matchedListeners.filter(listener => {
-					if (listener.replyingTo?.length && !reply) {
-						return false;
-					}
-
-					if (listener.replyingTo?.length && !listener.replyingTo.includes(reply.author.username)) {
-						return false;
-					}
-
-					return true;
-				});
-
 				const content = this.getContent(msg);
-
-				const avatarBuffer: ArrayBuffer | null = await fetchBuffer(msg.author.avatar ?
-					`https://cdn.discordapp.com/avatars/${msg.author.id}/${msg.author.avatar}.${msg.author.avatar.startsWith('a_') ? 'gif' : 'png'}?size=1024` :
-					'https://cdn.discordapp.com/embed/avatars/0.png'
-				).catch(() => null);
-
-				const authorAvatar = avatarBuffer ? hash(avatarBuffer) : null;
-				if (authorAvatar) cacheItem(authorAvatar, 'png', avatarBuffer);
-
-				const originAvatarHash = msg.guild_id ? guild?.icon : channel.icon;
-
-				const originAvatarBuffer = originAvatarHash ? await fetchBuffer(
-					`https://cdn.discordapp.com/${channel.icon ? 'channel-icons' : 'icons'}/${channel.icon ? msg.channel_id : msg.guild_id}/${originAvatarHash}.${originAvatarHash.startsWith('a_') ? 'gif' : 'png'}?size=240`
-				).catch(() => null) : null;
-
-				const originAvatar = originAvatarHash ? hash(originAvatarBuffer) : authorAvatar;
-				if (originAvatar) cacheItem(originAvatar, 'png', originAvatarBuffer);
 
 				const attachments: StoreItemAttachment[] = [];
 				for (const attachment of msg.attachments ?? []) {
@@ -260,23 +206,14 @@ class Client {
 					});
 				}
 
-				const groups = [...new Set(matchedListeners.map(l => l.group).filter(Boolean))];
-
 				const item: StoreItem<'discord'> = {
 					savedAt: Date.now(),
 					edited: false,
 					type: 'discord',
 					id: msg.id,
-					listeners: [...new Set(matchedListeners.map(l => l.name).filter(Boolean))],
-					groups,
 					author: {
 						name: msg.author.username,
-						avatar: authorAvatar && authorAvatar != 'none' ? authorAvatar + '.png' : 'none',
 						id: msg.author.id
-					},
-					origin: {
-						entity: await getDiscordEntityDetails(msg, guild, channel),
-						avatar: originAvatar && originAvatar != 'none' ? originAvatar + '.png' : 'none'
 					},
 					content,
 					attachments,
@@ -294,23 +231,20 @@ class Client {
 					}
 				};
 
-				for (const group of groups) {
-					const groupStorage = storage.storage[group];
-					const existing = groupStorage?.findIndex(i => i.id === item.id);
+				const storageKey = `discord-${id}`;
+				const groupStorage = storage.storage[storageKey];
+				const existing = groupStorage?.findIndex(i => i.id === item.id);
 
-					// Process edits
-					if (existing != void 0 && existing != -1) {
-						const previousItem = groupStorage[existing];
+				// Process edits
+				if (existing != void 0 && existing != -1) {
+					const previousItem = groupStorage[existing];
 
-						item.savedAt = previousItem.savedAt;
-						item.edited = true;
+					item.savedAt = previousItem.savedAt;
 
-						storage.storage[group][existing] = item;
-						storage.emit('updated');
-						continue;
-					}
-
-					storage.add(group, item);
+					storage.storage[storageKey][existing] = item;
+					storage.emit('updated', { storageKey });
+				} else {
+					storage.add(storageKey, item);
 				}
 			} break;
 		}

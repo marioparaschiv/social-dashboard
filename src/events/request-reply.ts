@@ -30,6 +30,7 @@ async function handler(ws: WebSocket, payload: RequestReply) {
 				return send(ws, DispatchType.REPLY_RESPONSE, { uuid, success: false });
 			}
 
+			console.log(request.parameters);
 			const success = await sendMessage({
 				token: client.token,
 				channel: channelId,

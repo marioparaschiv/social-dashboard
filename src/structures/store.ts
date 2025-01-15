@@ -22,7 +22,7 @@ class Store<T> extends EventEmitter {
 			arr.pop();
 		}
 
-		this.emit('updated');
+		this.emit('updated', { storageKey: category });
 		return this.storage;
 	}
 
@@ -37,7 +37,7 @@ class Store<T> extends EventEmitter {
 			delete this.storage[category];
 		}
 
-		this.emit('updated');
+		this.emit('updated', { storageKey: category });
 
 		return true;
 	}

@@ -3,19 +3,15 @@ import { clients as telegramClients } from '~/telegram';
 import { clients as discordClients } from '~/discord';
 import { createLogger } from '~/structures/logger';
 import { DispatchType } from '@shared/constants';
-import { cacheItem } from '~/file-cache';
 import type { WebSocket } from 'ws';
 import { utils } from 'telegram';
 import { send } from '~/socket';
-import { hash } from '~/utils';
 
 
 const logger = createLogger('WebSocket', 'Fetch Chats');
 
 async function handler(ws: WebSocket) {
 	if (!ws.authenticated) return;
-
-	console.log('got fetch chats');
 
 	const chats: FetchedChats = { discord: [], telegram: [] };
 
@@ -25,14 +21,8 @@ async function handler(ws: WebSocket) {
 			const channels: SelectableChannel[] = [];
 
 			for (const dialog of dialogs) {
-				let icon;
-
-				const originPhoto = await client.downloadProfilePhoto(dialog.entity) as Buffer | null;
-				const originAvatar = originPhoto?.length ? hash(originPhoto.buffer as ArrayBuffer) : 'none';
-				if (originAvatar) icon = cacheItem(originAvatar, 'png', originPhoto.buffer as ArrayBuffer);
-
 				channels.push({
-					icon,
+					platform: 'telegram',
 					id: dialog.id.toString(),
 					name: utils.getDisplayName(dialog.entity)
 				});
@@ -51,7 +41,7 @@ async function handler(ws: WebSocket) {
 			const guild = channel.guild_id && client.guilds.get(channel.guild_id);
 
 			channels.push({
-				icon: null,
+				platform: 'discord',
 				name: (guild ? `${guild.name} → ${channel.name}` : channel.name) ?? channel.recipients.map(r => r.username).join(', '),
 				id: channel.id
 			});
@@ -60,9 +50,7 @@ async function handler(ws: WebSocket) {
 		chats.discord = channels;
 	}
 
-	ws.chats = chats;
-
-	return send(ws, DispatchType.FETCH_CHATS_RESPONSE, ws.chats);
+	return send(ws, DispatchType.FETCH_CHATS_RESPONSE, chats);
 }
 
 export default handler;

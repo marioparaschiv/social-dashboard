@@ -1,7 +1,5 @@
-import type { StoreItem, StoreItemAttachment, TelegramListener } from '@shared/types';
-import { channelPredicate, chatPredicate, dmPredicate } from '~/telegram/predicates';
 import type { TelegramClientParams } from 'telegram/client/telegramBaseClient';
-import { getTelegramEntityDetails } from '~/utils/get-entity-details';
+import type { StoreItem, StoreItemAttachment } from '@shared/types';
 import { NewMessage, type NewMessageEvent } from 'telegram/events';
 import { TelegramClient } from 'telegram/client/TelegramClient';
 import { EditedMessage } from 'telegram/events/EditedMessage';
@@ -9,11 +7,11 @@ import { LogLevel } from 'telegram/extensions/Logger';
 import { Logger } from 'telegram/extensions/Logger';
 import { createLogger } from '~/structures/logger';
 import { stripPhoneNumber } from '~/utils/strip';
-import { getTelegramListeners } from '~/config';
-import { getDisplayName } from 'telegram/utils';
+import { getDisplayName } from 'telegram/Utils';
 import { input } from '@inquirer/prompts';
 import { cacheItem } from '~/file-cache';
 import mimeTypes from 'mime-types';
+import { clients } from '~/socket';
 import storage from '~/storage';
 import { hash } from '~/utils';
 import { Api } from 'telegram';
@@ -74,36 +72,8 @@ class Client extends TelegramClient {
 		const author = await event.message.getSender();
 		if (!author || (author.className !== 'Channel' && author.className !== 'User')) return;
 
-		const listeners = getTelegramListeners();
-		const matchedListeners: TelegramListener[] = [];
-
-		switch (origin.className) {
-			case 'Channel': {
-				const filtered = listeners.filter((listener) => channelPredicate(listener, author, origin, reply, replyAuthor as Api.User));
-				if (filtered.length) matchedListeners.push(...filtered);
-			} break;
-
-			case 'Chat': {
-				const filtered = listeners.filter((listener) => chatPredicate(listener, author, origin, reply, replyAuthor as Api.User));
-				if (filtered.length) matchedListeners.push(...filtered);
-			} break;
-
-			case 'PeerUser':
-			case 'User': {
-				const filtered = listeners.filter((listener) => dmPredicate(listener, author, origin, reply, replyAuthor as Api.User));
-				if (filtered.length) matchedListeners.push(...filtered);
-			} break;
-		}
-
-		if (!matchedListeners.length) return;
-
-		const originPhoto = await this.downloadProfilePhoto(origin) as Buffer | null;
-		const originAvatar = originPhoto?.length ? hash(originPhoto.buffer as ArrayBuffer) : 'none';
-		if (originAvatar) cacheItem(originAvatar, 'png', originPhoto.buffer as ArrayBuffer);
-
-		const authorPhoto = await this.downloadProfilePhoto(author) as Buffer | null;
-		const authorAvatar = authorPhoto?.length ? hash(authorPhoto.buffer as ArrayBuffer) : 'none';
-		if (authorAvatar) cacheItem(authorAvatar, 'png', authorPhoto.buffer as ArrayBuffer);
+		const id = ((origin as Api.Channel).id ?? (origin as Api.PeerUser).userId).toString();
+		if (![...clients.values()].some(client => client.chats.some(c => c.platform === 'telegram' && c.id === id))) return;
 
 		const originId = await this.getPeerId(origin);
 
@@ -122,25 +92,16 @@ class Client extends TelegramClient {
 			});
 		}
 
-		const groups = [...new Set(matchedListeners.map(l => l.group))];
-
 		const item: StoreItem<'telegram'> = {
 			type: 'telegram',
 			edited: event.message.editDate && !event.message.editHide,
 			id: event.message.id.toString(),
 			author: {
 				name: getDisplayName(author) ?? 'Unknown',
-				avatar: authorAvatar && authorAvatar != 'none' ? authorAvatar + '.png' : 'none',
 				id: author.id.toString()
-			},
-			origin: {
-				avatar: originAvatar && originAvatar != 'none' ? originAvatar + '.png' : 'none',
-				entity: await getTelegramEntityDetails(origin, reply)
 			},
 			attachments,
 			embeds: [],
-			listeners: [...new Set(matchedListeners.map(l => l.name))],
-			groups,
 			content: this.getContent(event.message),
 			reply: reply ? {
 				author: getDisplayName(replyAuthor),
@@ -155,22 +116,22 @@ class Client extends TelegramClient {
 			savedAt: Date.now(),
 		};
 
-		for (const group of groups) {
-			const groupStorage = storage.storage[group];
-			const existing = groupStorage?.findIndex(i => i.id === item.id);
+		console.log('adding');
 
-			// Process edits
-			if (existing != void 0 && existing != -1) {
-				const previousItem = groupStorage[existing];
+		const storageKey = `telegram-${id}`;
+		const groupStorage = storage.storage[storageKey];
+		const existing = groupStorage?.findIndex(i => i.id === item.id);
 
-				item.savedAt = previousItem.savedAt;
+		// Process edits
+		if (existing != void 0 && existing != -1) {
+			const previousItem = groupStorage[existing];
 
-				storage.storage[group][existing] = item;
-				storage.emit('updated');
-				continue;
-			}
+			item.savedAt = previousItem.savedAt;
 
-			storage.add(group, item);
+			storage.storage[storageKey][existing] = item;
+			storage.emit('updated', { storageKey });
+		} else {
+			storage.add(storageKey, item);
 		}
 	}
 

@@ -16,8 +16,9 @@ export default {
 			colors: {
 				'background': 'hsl(var(--background))',
 				'primary': 'hsl(var(--primary))',
+				'accent': 'hsl(var(--accent))',
 				'foreground': 'hsl(var(--foreground))',
-				'border': 'hsl(var(--border))'
+				'border': 'hsl(var(--border))',
 			}
 		}
 	},
