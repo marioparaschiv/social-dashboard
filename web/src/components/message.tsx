@@ -179,7 +179,7 @@ function Message({ message, ...props }: MessageProps) {
 					key={`message-${message.savedAt}-attachment-${index}`}
 				/>)}
 			</div>}
-			{message.embeds && <div className='flex flex-col gap-2 my-2 w-full'>
+			{message.embeds.length !== 0 && <div className='flex flex-col gap-2 my-2 w-full'>
 				{message.embeds.map(embed => <Embed embed={embed} />)}
 			</div>}
 		</div>
