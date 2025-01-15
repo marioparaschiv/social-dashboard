@@ -178,6 +178,8 @@ class Client {
 				const channel = this.channels.get(msg.channel_id);
 				const guild = this.guilds.get(msg.guild_id);
 
+				if (!channel) return;
+
 				const id = channel.id;
 				if (![...clients.values()].some(client => client.chats.some(c => c.platform === 'discord' && c.id === id))) return;
 
