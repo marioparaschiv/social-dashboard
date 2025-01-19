@@ -12,7 +12,10 @@ export enum DispatchType {
 	REQUEST_AUTH = 'request-auth',
 	REQUEST_IMAGE = 'request-image',
 	REQUEST_VIDEO = 'request-video',
-	REQUEST_REPLY = 'request-reply'
+	REQUEST_REPLY = 'request-reply',
+	UPDATE_CONFIG = 'update-config',
+	REQUEST_CONFIG = 'request-config',
+	CONFIG_RESPONSE = 'config-response'
 }
 
 export const API_URL = `http${webConfig.apiSSL ? 's' : ''}://${webConfig.ip}${webConfig.apiPort ? ':' + webConfig.apiPort : ''}`;

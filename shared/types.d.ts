@@ -73,6 +73,11 @@ export interface SendMessageOptions {
 	retriesRemaining?: number;
 }
 
+export interface ConfigResponse {
+	webConfig: typeof import('../web-config.json');
+	config: typeof import('../config.json');
+}
+
 export interface GetMessageOptions {
 	token: string;
 	channel: string;
