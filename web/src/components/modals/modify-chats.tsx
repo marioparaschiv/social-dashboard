@@ -7,8 +7,10 @@ import { DispatchType } from '@shared/constants';
 import { Button } from '~/components/ui/button';
 import ChatItem from '~/components/chat-item';
 import useBackend from '~/hooks/use-backend';
+import { forwardRef, useMemo } from 'react';
 import useChatsStore from '~/stores/chats';
-import { Dialogs } from '~/utils';
+import { Virtuoso } from 'react-virtuoso';
+import { cn, Dialogs } from '~/utils';
 
 
 export function ModifyChats({ uuid }: { uuid: string; }) {
@@ -32,6 +34,11 @@ export function ModifyChats({ uuid }: { uuid: string; }) {
 		}
 	});
 
+	const telegramData = useMemo(() => data?.telegram.filter((a) => !chats.includes(a)) ?? [], [data, chats]);
+	const discordData = useMemo(() => data?.discord.filter((a) => !chats.includes(a)) ?? [], [data, chats]);
+
+	console.log(discordData);
+
 	return (
 		<div className='w-full'>
 			<Tabs defaultValue='active' className='w-full'>
@@ -41,7 +48,7 @@ export function ModifyChats({ uuid }: { uuid: string; }) {
 					<TabsTrigger className='w-full' value='telegram'>Telegram</TabsTrigger>
 				</TabsList>
 
-				<TabsContent className='max-h-96 [overflow:overlay] flex flex-col gap-2 m-0 data-[state=active]:my-2' value='active'>
+				<TabsContent className='data-[state=active]:h-96 [overflow:overlay] flex flex-col gap-2 m-0 data-[state=active]:my-2' value='active'>
 					<ActiveChats />
 					{chats.length === 0 && <div className='flex flex-col items-center justify-center py-24'>
 						<SearchX size={96} />
@@ -49,7 +56,7 @@ export function ModifyChats({ uuid }: { uuid: string; }) {
 					</div>}
 				</TabsContent>
 
-				<TabsContent className='max-h-96 [overflow:overlay] flex flex-col gap-2 m-0 data-[state=active]:my-2' value='discord'>
+				<TabsContent className='data-[state=active]:h-96 [overflow:overlay] flex flex-col gap-2 m-0 data-[state=active]:my-2' value='discord'>
 					{!isLoading && error && (
 						<div className='flex flex-col gap-2 items-center justify-center py-24'>
 							<X size={64} />
@@ -61,18 +68,28 @@ export function ModifyChats({ uuid }: { uuid: string; }) {
 							<Loader2 size={64} className='animate-spin' />
 						</div>
 					)}
-					{!isLoading && !error && data?.discord
-						.filter((a) => !chats.includes(a))
-						.map(chat => (
-							<ChatItem
-								key={chat.id}
-								type='add'
-								chat={chat}
-							/>
-						))}
+					{!isLoading && !error && <Virtuoso
+						data={discordData}
+						totalCount={discordData.length}
+						itemContent={(index, chat) => <ChatItem
+							className={cn('my-1', index === 0 && 'mt-0', index === (discordData.length - 1) && 'mb-0')}
+							key={'chat' + index}
+							type='add'
+							chat={chat}
+						/>}
+						components={{
+							Item: forwardRef((props, ref: React.ForwardedRef<HTMLDivElement>) => (
+								<div
+									{...props}
+									className={cn('flex flex-col px-1')}
+									ref={ref}
+								/>
+							))
+						}}
+					/>}
 				</TabsContent>
 
-				<TabsContent className='max-h-96 [overflow:overlay] flex flex-col gap-2 m-0 data-[state=active]:my-2' value='telegram'>
+				<TabsContent className='data-[state=active]:h-96 h-full [overflow:overlay] flex flex-col gap-2 m-0 data-[state=active]:my-2' value='telegram'>
 					{!isLoading && error && (
 						<div className='flex flex-col gap-2 items-center justify-center py-24'>
 							<X size={64} />
@@ -84,15 +101,25 @@ export function ModifyChats({ uuid }: { uuid: string; }) {
 							<Loader2 size={64} className='animate-spin' />
 						</div>
 					)}
-					{!isLoading && !error && data?.telegram
-						.filter((a) => !chats.includes(a))
-						.map(chat => (
-							<ChatItem
-								key={chat.id}
-								type='add'
-								chat={chat}
-							/>
-						))}
+					{!isLoading && !error && <Virtuoso
+						data={telegramData}
+						totalCount={telegramData.length}
+						itemContent={(index, chat) => <ChatItem
+							className={cn('my-1', index === 0 && 'mt-0', index === (discordData.length - 1) && 'mb-0')}
+							key={'chat' + index}
+							type='add'
+							chat={chat}
+						/>}
+						components={{
+							Item: forwardRef((props, ref: React.ForwardedRef<HTMLDivElement>) => (
+								<div
+									{...props}
+									className={cn('flex flex-col px-1')}
+									ref={ref}
+								/>
+							))
+						}}
+					/>}
 				</TabsContent>
 			</Tabs>
 

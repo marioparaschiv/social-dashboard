@@ -186,6 +186,7 @@ export type StoreItemParameters<T extends string> = T extends 'discord' ? Discor
 
 export interface StoreItem<T extends string = StoreItemTypes, K = StoreItemParameters<T>> {
 	savedAt: number;
+	chat: SelectableChannel;
 	type: T;
 	id: string;
 	embeds: Embed[];

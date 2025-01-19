@@ -1,4 +1,4 @@
-import type { DispatchPayload } from '@shared/types';
+import { type DispatchPayload, type SelectableChannel } from '@shared/types';
 import { createLogger } from '~/structures/logger';
 import { DispatchType } from '@shared/constants';
 import { WebSocket, WebSocketServer } from 'ws';
@@ -11,6 +11,7 @@ const server = new WebSocketServer({ port: config.port });
 const logger = createLogger('Socket', 'Server');
 
 export const clients = new Set<WebSocket>();
+export const externalChats = new Map<string, SelectableChannel>();
 
 server.on('connection', (ws: WebSocket) => {
 	logger.debug(`A new client has connected.`);
@@ -68,6 +69,24 @@ export function send<T extends DispatchType>(ws: WebSocket, type: T, payload?: D
 	} catch (error) {
 		console.error('Failed to send WebSocket message to client:', error);
 	}
+}
+
+export function getActiveChats() {
+	const chats = new Map<string, SelectableChannel>();
+
+	for (const client of clients) {
+		for (const chat of client.chats) {
+			if (!chats.has(chat.id)) {
+				chats.set(chat.id, chat);
+			}
+		}
+	}
+
+	for (const external of externalChats.values()) {
+		chats.set(external.id, external);
+	}
+
+	return [...chats.values()];
 }
 
 logger.success(`Initialized WebSocket server on port ${config.port}.`);

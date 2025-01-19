@@ -22,6 +22,7 @@ class Store<T> extends EventEmitter {
 			arr.pop();
 		}
 
+		this.emit('added', category, item);
 		this.emit('updated', { storageKey: category });
 		return this.storage;
 	}

@@ -4,10 +4,10 @@ import { createLogger } from '~/structures/logger';
 import { getDiscordReplacements } from '~/config';
 import { stripToken } from '~/utils/strip';
 import { getMessage } from '~/discord/api';
+import { getActiveChats } from '~/socket';
 import { cacheItem } from '~/file-cache';
 import { fetchBuffer } from '~/utils';
 import mimeTypes from 'mime-types';
-import { clients } from '~/socket';
 import config from '@config.json';
 import storage from '~/storage';
 import { hash } from '~/utils';
@@ -181,7 +181,7 @@ class Client {
 				if (!channel) return;
 
 				const id = channel.id;
-				if (![...clients.values()].some(client => client.chats.some(c => c.platform === 'discord' && c.id === id))) return;
+				if (!config.discord.alwaysTrack?.includes(id) || !getActiveChats().some(c => c.platform === 'discord' && c.id === id)) return;
 
 				const reply = msg.message_reference && await getMessage({
 					channel: msg.message_reference.channel_id,
@@ -210,6 +210,11 @@ class Client {
 
 				const item: StoreItem<'discord'> = {
 					savedAt: Date.now(),
+					chat: {
+						platform: 'discord',
+						name: (guild ? `${guild.name} → ${channel.name}` : channel.name) ?? channel.recipients.map(r => r.username).join(', '),
+						id: channel.id
+					},
 					edited: false,
 					type: 'discord',
 					id: msg.id,
@@ -244,6 +249,7 @@ class Client {
 					item.savedAt = previousItem.savedAt;
 
 					storage.storage[storageKey][existing] = item;
+					storage.emit('added', storageKey, item);
 					storage.emit('updated', { storageKey });
 				} else {
 					storage.add(storageKey, item);

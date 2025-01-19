@@ -3,9 +3,9 @@ import { clients as telegramClients } from '~/telegram';
 import { clients as discordClients } from '~/discord';
 import { createLogger } from '~/structures/logger';
 import { DispatchType } from '@shared/constants';
+import { externalChats, send } from '~/socket';
 import type { WebSocket } from 'ws';
 import { utils } from 'telegram';
-import { send } from '~/socket';
 
 
 const logger = createLogger('WebSocket', 'Fetch Chats');
@@ -28,7 +28,8 @@ async function handler(ws: WebSocket) {
 				});
 			}
 
-			chats.telegram = [...chats.telegram, ...channels];
+			const externals = externalChats.values().filter(e => e.platform === 'telegram');
+			chats.telegram = [...chats.telegram, ...channels, ...externals];
 		} catch (error) {
 			logger.error(`Failed to get chats for client: ${client}`);
 		}
@@ -47,7 +48,8 @@ async function handler(ws: WebSocket) {
 			});
 		}
 
-		chats.discord = channels;
+		const externals = externalChats.values().filter(e => e.platform === 'discord');
+		chats.discord = [...channels, ...externals];
 	}
 
 	return send(ws, DispatchType.FETCH_CHATS_RESPONSE, chats);

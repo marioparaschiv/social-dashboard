@@ -9,12 +9,13 @@ import { createLogger } from '~/structures/logger';
 import { stripPhoneNumber } from '~/utils/strip';
 import { getDisplayName } from 'telegram/Utils';
 import { input } from '@inquirer/prompts';
+import { getActiveChats } from '~/socket';
 import { cacheItem } from '~/file-cache';
+import { Api, utils } from 'telegram';
 import mimeTypes from 'mime-types';
-import { clients } from '~/socket';
+import config from '@config.json';
 import storage from '~/storage';
 import { hash } from '~/utils';
-import { Api } from 'telegram';
 
 
 interface ClientOptions {
@@ -73,7 +74,7 @@ class Client extends TelegramClient {
 		if (!author || (author.className !== 'Channel' && author.className !== 'User')) return;
 
 		const id = ((origin as Api.Channel).id ?? (origin as Api.PeerUser).userId).toString();
-		if (![...clients.values()].some(client => client.chats.some(c => c.platform === 'telegram' && c.id === id))) return;
+		if (!config.telegram.alwaysTrack?.includes(id) || !getActiveChats().some(c => c.platform === 'telegram' && c.id === id)) return;
 
 		const originId = await this.getPeerId(origin);
 
@@ -94,6 +95,11 @@ class Client extends TelegramClient {
 
 		const item: StoreItem<'telegram'> = {
 			type: 'telegram',
+			chat: {
+				platform: 'telegram',
+				id,
+				name: utils.getDisplayName(origin)
+			},
 			edited: event.message.editDate && !event.message.editHide,
 			id: event.message.id.toString(),
 			author: {
@@ -129,6 +135,7 @@ class Client extends TelegramClient {
 			item.savedAt = previousItem.savedAt;
 
 			storage.storage[storageKey][existing] = item;
+			storage.emit('added', storageKey, item);
 			storage.emit('updated', { storageKey });
 		} else {
 			storage.add(storageKey, item);

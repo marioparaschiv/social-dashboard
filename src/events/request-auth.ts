@@ -6,7 +6,7 @@ import { send } from '~/socket';
 
 
 function handler(ws: WebSocket, payload: RequestAuth) {
-	const success = config.password === payload.password;
+	const success = config.dashboardPassword === payload.password;
 
 	if (success) ws.authenticated = true;
 
